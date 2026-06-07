@@ -1,0 +1,6 @@
+{
+  "name": "Gestão de Benefícios Corporativos",
+  "description": "Sistema SaaS premium de gestão, contratação e inteligência de benefícios corporativos com chatbot IA e análises.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

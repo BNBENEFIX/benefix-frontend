@@ -1,0 +1,294 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Tipos alinhados com os schemas do backend BNFix (openapi.json)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Roles do backend: ADMIN | MANAGER | USER  */
+export type BackendRole = 'ADMIN' | 'MANAGER' | 'USER';
+
+/** Roles internos do frontend para roteamento de dashboard */
+export type UserRole = 'ADMIN' | 'SUPPLIER' | 'COMPANY' | 'EMPLOYEE';
+
+// ── Auth ─────────────────────────────────────────────────────────────────────
+
+export interface LoginRequest {
+  email: string;
+  password: string;
+}
+
+export interface LoginResponse {
+  token: string;
+  /** Campo retornado pelo backend — pode variar; tratar com fallback */
+  role?: BackendRole;
+  /** Algumas implementações retornam o objeto do usuário junto */
+  user?: BackendUser;
+}
+
+// ── Entidades do backend ─────────────────────────────────────────────────────
+
+export interface BackendUser {
+  id: number;
+  name: string;
+  email: string;
+  role: BackendRole;
+  companyId?: number;
+  companyName?: string;
+  cpf?: string;
+  active?: boolean;
+}
+
+export interface BackendBenefit {
+  id: number;
+  name: string;
+  description: string;
+  companyId: number;
+  companyName?: string;
+  active?: boolean;
+}
+
+export interface BackendEmployee {
+  id: number;
+  name: string;
+  cpf: string;
+  email: string;
+  companyId: number;
+  active?: boolean;
+}
+
+export interface BackendManager {
+  id: number;
+  name: string;
+  cpf: string;
+  email: string;
+  companyId: number;
+}
+
+export interface BackendCompany {
+  id: number;
+  name: string;
+  cnpj: string;
+  active?: boolean;
+}
+
+export interface BackendPartnership {
+  id: number;
+  benefitId: number;
+  companyId: number;
+  status: 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'DISABLED';
+  createdAt?: string;
+}
+
+export interface BackendSubscription {
+  id: number;
+  benefitId: number;
+  employeeId: number;
+  createdAt?: string;
+}
+
+// ── Tipos do frontend (mapeados a partir do backend) ─────────────────────────
+
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  backendRole?: BackendRole;
+  companyId?: string;
+  companyName?: string;
+  avatarUrl?: string;
+  // Gamificação (calculado localmente — backend não expõe esses campos)
+  score?: number;
+  level?: 'Bronze' | 'Prata' | 'Ouro' | 'Diamante';
+}
+
+export type BenefitCategory =
+  | 'Saúde'
+  | 'Educação'
+  | 'Alimentação'
+  | 'Transporte'
+  | 'Bem-estar'
+  | 'Tecnologia'
+  | 'Lazer'
+  | 'Psicologia'
+  | 'Academias'
+  | 'Telemedicina';
+
+export interface Benefit {
+  id: string;
+  name: string;
+  category: BenefitCategory;
+  supplierId: string;
+  supplierName: string;
+  rating: number;
+  ratingCount: number;
+  description: string;
+  imageUrl: string;
+  details: string;
+  status: 'Ativo' | 'Pendente' | 'Suspenso';
+  rules?: string;
+  /** ID original do backend (int64) */
+  backendId?: number;
+  companyId?: number;
+  active?: boolean;
+  /** Alias usado em alguns pontos do código legado */
+  providerName?: string;
+}
+
+export interface BenefitRequest {
+  id: string;
+  benefitId: string;
+  benefitName: string;
+  employeeId: string;
+  employeeName: string;
+  companyId: string;
+  category: BenefitCategory;
+  requestedAt: string;
+  status: 'Pendente' | 'Em análise' | 'Aprovado' | 'Rejeitado';
+  approvedAt?: string;
+  justification?: string;
+}
+
+export interface Coupon {
+  id: string;
+  benefitId: string;
+  benefitName: string;
+  code: string;
+  discount: string;
+  description: string;
+  expiryDate: string;
+}
+
+export interface Voucher {
+  id: string;
+  benefitId: string;
+  benefitName: string;
+  code: string;
+  qrValue: string;
+  expiryDate: string;
+  employeeId: string;
+  status: 'Ativo' | 'Utilizado' | 'Expirado';
+}
+
+export interface Company {
+  id: string;
+  name: string;
+  cnpj: string;
+  status: 'Ativo' | 'Pendente' | 'Suspenso';
+  employeesCount: number;
+  hiredBenefitsCount: number;
+}
+
+export interface Supplier {
+  id: string;
+  name: string;
+  cnpj: string;
+  rating: number;
+  benefitsCount: number;
+  status: 'Ativo' | 'Pendente' | 'Suspenso';
+}
+
+export interface Announcement {
+  id: string;
+  title: string;
+  content: string;
+  publishedAt: string;
+  companyId: string;
+  author: string;
+}
+
+export interface CalendarEvent {
+  id: string;
+  title: string;
+  date: string;
+  type: 'health' | 'wellness' | 'campaign' | 'internal';
+  color: string;
+  description: string;
+}
+
+export interface FeedbackRating {
+  id: string;
+  benefitId: string;
+  employeeName: string;
+  rating: number;
+  comment: string;
+  createdAt: string;
+}
+
+export interface SurveyCampaign {
+  id: string;
+  title: string;
+  description: string;
+  period: string;
+  status: 'Ativo' | 'Encerrado';
+  sentBy: string;
+  sentAt: string;
+}
+
+export interface SurveyResponse {
+  id: string;
+  campaignId: string;
+  campaignTitle: string;
+  employeeId: string;
+  employeeName: string;
+  nps: number;
+  platformSatisfaction: number;
+  benefitId?: string;
+  benefitName?: string;
+  benefitRating?: number;
+  benefitComment?: string;
+  submittedAt: string;
+}
+
+export interface ChatMessage {
+  id: string;
+  senderId: string;
+  senderName: string;
+  recipientId: string;
+  content: string;
+  timestamp: string;
+}
+
+// ── Requests de criação (alinhados ao OpenAPI) ───────────────────────────────
+
+export interface CreateBenefitPayload {
+  name: string;
+  description: string;
+  companyId: number;
+}
+
+export interface UpdateBenefitPayload {
+  name?: string;
+  description?: string;
+}
+
+export interface CreateEmployeePayload {
+  name: string;
+  cpf: string;
+  email: string;
+  password: string;
+  companyId: number;
+}
+
+export interface UpdateEmployeePayload {
+  name?: string;
+}
+
+export interface CreateManagerPayload {
+  name: string;
+  cpf: string;
+  email: string;
+  password: string;
+  companyId: number;
+}
+
+export interface OnboardingPayload {
+  company: { name: string; cnpj: string };
+  manager: { name: string; cpf: string; email: string; password: string };
+}
+
+export interface CreatePartnershipPayload {
+  benefitId: number;
+}
+
+export interface CreateSubscriptionPayload {
+  benefitId?: number;
+}
