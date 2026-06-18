@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { benefitService, requestService, recommendationService } from '../services/api';
+import { benefitService, recommendationService } from '../services/api';
+import { partnershipService } from '../services/partnershipService';
 import { Benefit, BenefitCategory } from '../types';
 import { Search, Filter, Star, Sparkles, Send, Heart, Eye, RefreshCw, Bookmark } from 'lucide-react';
 import { Toast } from '../components/Toast';
 
 export const BenefitsCatalog: React.FC = () => {
-  const { user, refreshUserData } = useAuth();
+  const { user } = useAuth();
   const [benefits, setBenefits] = useState<Benefit[]>([]);
   const [recommendations, setRecommendations] = useState<Benefit[]>([]);
   const [favorites, setFavorites] = useState<string[]>(() => {
@@ -60,21 +61,19 @@ export const BenefitsCatalog: React.FC = () => {
   const handleRequestBenefit = async () => {
     if (!selectedBenefit) return;
     try {
-      await requestService.createRequest({
-        benefitId: selectedBenefit.id,
-        employeeId: user?.id || '4',
-        employeeName: user?.name || 'Rodrigo Antunes',
-        companyId: user?.companyId || 'comp_1',
-        category: selectedBenefit.category
+      const partnership = await partnershipService.request({
+        benefitId: selectedBenefit.backendId ?? Number(selectedBenefit.id),
       });
-      setToast({ visible: true, message: `Solicitação para "${selectedBenefit.name}" enviada ao RH com sucesso! Você ganhou +100 pontos de gamificação.`, type: 'success' });
-      
-      // Update core score in Context API
-      await refreshUserData();
+
+      setToast({
+        visible: true,
+        message: `Solicitação de parceria para "${selectedBenefit.name}" enviada com sucesso. Partnership ID: ${partnership.id}.`,
+        type: 'success',
+      });
       setSelectedBenefit(null);
     } catch (err) {
       console.error(err);
-      setToast({ visible: true, message: 'Falha técnica ao registrar pedido.', type: 'error' });
+      setToast({ visible: true, message: 'Falha técnica ao registrar a solicitação de parceria.', type: 'error' });
     }
   };
 
@@ -215,8 +214,11 @@ export const BenefitsCatalog: React.FC = () => {
                   <span className="absolute top-3.5 right-3.5 text-[8.5px] font-extrabold uppercase bg-slate-900/80 text-white py-1 px-2.5 rounded-md backdrop-blur-sm">
                     {b.category}
                   </span>
+                  <span className={`absolute top-3.5 left-3.5 text-[8.5px] font-extrabold uppercase py-1 px-2.5 rounded-md backdrop-blur-sm ${b.active !== false ? 'bg-emerald-500/90 text-white' : 'bg-slate-700/90 text-slate-100'}`}>
+                    {b.active !== false ? 'Ativo' : 'Inativo'}
+                  </span>
                   
-                  {user?.role === 'EMPLOYEE' && (
+                  {user?.role === 'EMPLOYEE' && b.active !== false && (
                     <button 
                       onClick={() => toggleFavorite(b.id)}
                       className="absolute top-3.5 left-3.5 p-2 rounded-full glass-effect hover:bg-white text-rose-500 transition-all cursor-pointer shadow-md"
@@ -252,9 +254,10 @@ export const BenefitsCatalog: React.FC = () => {
                   {user?.role === 'EMPLOYEE' ? (
                     <button
                       onClick={() => setSelectedBenefit(b)}
+                      disabled={b.active === false}
                       className="w-full py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs rounded-xl shadow-md cursor-pointer text-center block transition-transform group-hover:scale-[1.01]"
                     >
-                      Solicitar Benefício
+                      {b.active === false ? 'Indisponível' : 'Solicitar Parceria'}
                     </button>
                   ) : (
                     <div className="text-[10px] text-center font-bold text-slate-400 uppercase py-2 bg-slate-100/50 dark:bg-slate-950/40 rounded-xl">
@@ -276,14 +279,14 @@ export const BenefitsCatalog: React.FC = () => {
           <div className="w-full max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-2xl space-y-4 text-left">
             <div className="space-y-1">
               <span className="text-[9px] font-extrabold uppercase bg-emerald-500/10 text-emerald-600 dark:text-emerald-450 px-2 py-0.5 rounded-md">
-                Confirmar Solicitação
+                Confirmar Solicitação de Parceria
               </span>
-              <h4 className="font-display font-black text-md text-slate-850 dark:text-neutral-50 pt-1">Deseja assinar este benefício corporativo?</h4>
+              <h4 className="font-display font-black text-md text-slate-850 dark:text-neutral-50 pt-1">Deseja solicitar parceria com este benefício?</h4>
               <p className="text-xs text-slate-400 uppercase tracking-wide leading-tight">{selectedBenefit.name}</p>
             </div>
 
             <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-              Ao solicitar esse benefício, uma fila de triagem automática e notificação de conformidade será disparada diretamente ao RH da <strong>Acme Digital</strong> para liberação imediata. Você acumula +100 pontos de gamificação por solicitar e usar.
+              Ao solicitar a parceria, o pedido será encaminhado ao administrador responsável por este benefício para aprovação, rejeição ou desabilitação.
             </p>
 
             <div className="flex justify-end gap-2 pt-2 text-xs">
@@ -297,7 +300,7 @@ export const BenefitsCatalog: React.FC = () => {
                 type="button" onClick={handleRequestBenefit}
                 className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl shadow-md cursor-pointer"
               >
-                Gerar Solicitação
+                Gerar Solicitação de Parceria
               </button>
             </div>
           </div>

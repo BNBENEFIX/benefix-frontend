@@ -47,9 +47,16 @@ export const buildUserFromToken = (token: string, emailFallback?: string): User 
     'USER';
 
   const uiRole = backendRoleToUIRole(backendRole as BackendRole);
+  const stableId =
+    payload.id ??
+    payload.userId ??
+    (uiRole === 'COMPANY' && payload.companyId ? payload.companyId : null) ??
+    payload.sub ??
+    emailFallback ??
+    '';
 
   return {
-    id:          String(payload.sub ?? payload.id ?? payload.userId ?? ''),
+    id:          String(stableId),
     name:        payload.name ?? payload.preferred_username ?? emailFallback?.split('@')[0] ?? 'Usuário',
     email:       payload.email ?? payload.upn ?? emailFallback ?? '',
     role:        uiRole,

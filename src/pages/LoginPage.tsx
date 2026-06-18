@@ -25,15 +25,13 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
     }
 
     setLoading(true);
-    const success = await login(email.trim(), password);
+    const result = await login(email.trim(), password);
     setLoading(false);
 
-    if (success) {
+    if (result.success) {
       onLoginSuccess();
     } else {
-      setError(
-        'Credenciais inválidas ou conta não encontrada. Verifique seu e-mail e senha e tente novamente.',
-      );
+      setError(result.message ?? 'E-mail ou senha incorretos.');
     }
   };
 

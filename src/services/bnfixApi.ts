@@ -1,13 +1,13 @@
 /**
  * Cliente HTTP principal para a API BNFix.
  *
- * - Base URL: variável de ambiente VITE_API_BASE_URL (https://api.bnfix.com.br)
+ * - Base URL: proxy local do frontend (/api/bnfix)
  * - Autenticação: Bearer JWT armazenado no localStorage
  * - Interceptors: injeta token em todas as requests e trata erros 401/403
  */
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'https://api.bnfix.com.br';
+const BASE_URL = '/api/bnfix';
 
 export const TOKEN_KEY = 'bnfix_jwt_token';
 export const USER_KEY  = 'bnfix_user';
@@ -17,6 +17,7 @@ export const USER_KEY  = 'bnfix_user';
 const bnfixApi = axios.create({
   baseURL: BASE_URL,
   headers: { 'Content-Type': 'application/json' },
+  withCredentials: true,
   timeout: 15_000,
 });
 
@@ -39,11 +40,8 @@ bnfixApi.interceptors.response.use(
       const { status } = error.response;
 
       if (status === 401) {
-        // Token expirado ou inválido — limpa sessão e força re-login
-        localStorage.removeItem(TOKEN_KEY);
-        localStorage.removeItem(USER_KEY);
-        // Emite evento customizado para o AuthContext reagir sem acoplamento
-        window.dispatchEvent(new Event('bnfix:session-expired'));
+        // A sessão é controlada pelo AuthContext. Não logamos 401 aqui para
+        // evitar ruído quando a aplicação faz chamadas opcionais.
       }
 
       if (status === 403) {

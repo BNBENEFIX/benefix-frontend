@@ -38,14 +38,7 @@ const localApi = axios.create({
 
 export const benefitService = {
   getBenefits: async (): Promise<Benefit[]> => {
-    try {
-      // Tenta o marketplace real (requer token)
-      return await realBenefitService.getMarketplace();
-    } catch {
-      // Fallback para o servidor local enquanto usuário não está autenticado
-      const res = await localApi.get<Benefit[]>('/benefits');
-      return res.data;
-    }
+    return realBenefitService.getTenantBenefits();
   },
 
   createBenefit: async (payload: Partial<Benefit>): Promise<Benefit> => {
@@ -246,12 +239,8 @@ export const contactService = {
 
 export const recommendationService = {
   getRecommendations: async (): Promise<Benefit[]> => {
-    try {
-      return await realBenefitService.getMarketplace();
-    } catch {
-      const res = await localApi.get<Benefit[]>('/recommendations');
-      return res.data;
-    }
+    const res = await localApi.get<Benefit[]>('/recommendations');
+    return res.data;
   },
 };
 

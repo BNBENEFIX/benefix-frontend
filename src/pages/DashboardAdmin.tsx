@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { metricsService, userService, surveyService } from '../services/api';
+import { partnershipService } from '../services/partnershipService';
 import { SurveyCampaign, SurveyResponse } from '../types';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend, PieChart, Pie, Cell } from 'recharts';
 import { 
   Building2, Users, ShoppingBag, ShieldCheck, HelpCircle, ArrowUpRight, 
   Settings, CheckCircle2, AlertCircle, Ban, RefreshCw, Sparkles, MessageSquare, Plus, Trash2, Star, Check
 } from 'lucide-react';
+import { Toast } from '../components/Toast';
 
 export const DashboardAdmin: React.FC = () => {
   const [metrics, setMetrics] = useState<any>(null);
@@ -21,6 +23,8 @@ export const DashboardAdmin: React.FC = () => {
   const [responses, setResponses] = useState<SurveyResponse[]>([]);
   const [showSurveyModal, setShowSurveyModal] = useState(false);
   const [newCampaign, setNewCampaign] = useState({ title: '', description: '', period: '' });
+  const [partnershipId, setPartnershipId] = useState('');
+  const [toast, setToast] = useState({ visible: false, message: '', type: 'success' as 'success' | 'error' | 'info' });
 
   const syncData = async () => {
     setLoading(true);
@@ -93,6 +97,34 @@ export const DashboardAdmin: React.FC = () => {
     setCompanies(companies.map(c => c.id === id ? { ...c, status: newStatus } : c));
   };
 
+  const handlePartnershipAction = async (action: 'accept' | 'reject' | 'disable') => {
+    const parsedId = Number(partnershipId);
+    if (!Number.isFinite(parsedId) || parsedId <= 0) {
+      setToast({ visible: true, message: 'Informe um partnershipId válido.', type: 'error' });
+      return;
+    }
+
+    try {
+      if (action === 'accept') {
+        await partnershipService.accept(parsedId);
+      } else if (action === 'reject') {
+        await partnershipService.reject(parsedId);
+      } else {
+        await partnershipService.disable(parsedId);
+      }
+
+      setToast({
+        visible: true,
+        message: `Parceria ${action === 'accept' ? 'aceita' : action === 'reject' ? 'rejeitada' : 'desabilitada'} com sucesso.`,
+        type: 'success',
+      });
+      setPartnershipId('');
+    } catch (error) {
+      console.error(error);
+      setToast({ visible: true, message: 'Falha ao executar a ação da parceria.', type: 'error' });
+    }
+  };
+
   const COLORS = ['#22c55e', '#0ea5e9', '#ec4899', '#f59e0b'];
 
   if (loading || !metrics) {
@@ -131,6 +163,7 @@ export const DashboardAdmin: React.FC = () => {
 
   return (
     <div className="p-6 space-y-8 text-left fade-in">
+      <Toast visible={toast.visible} message={toast.message} type={toast.type} onClose={() => setToast({ ...toast, visible: false })} />
       
       {/* Sub-Layout Navigation and Corporate Title */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-5">
@@ -369,6 +402,49 @@ export const DashboardAdmin: React.FC = () => {
               ))}
             </tbody>
           </table>
+        </div>
+      </div>
+
+      {/* Partnerships management */}
+      <div className="p-6 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 rounded-2xl space-y-4 shadow-sm">
+        <div>
+          <h4 className="font-bold text-md text-slate-800 dark:text-slate-100">Gestão de Parcerias</h4>
+          <p className="text-xs text-slate-400 mt-0.5">Informe o <span className="font-mono font-bold">partnershipId</span> para aceitar, rejeitar ou desabilitar uma parceria.</p>
+        </div>
+
+        <div className="flex flex-col md:flex-row gap-3 items-start md:items-center">
+          <input
+            type="number"
+            min="1"
+            placeholder="partnershipId"
+            value={partnershipId}
+            onChange={(e) => setPartnershipId(e.target.value)}
+            className="w-full md:w-72 p-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl outline-none text-sm text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:border-emerald-500 transition-all"
+          />
+
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => handlePartnershipAction('accept')}
+              className="px-4 py-2 rounded-xl text-xs font-bold bg-emerald-500 text-white hover:bg-emerald-600 transition-colors"
+            >
+              Aceitar
+            </button>
+            <button
+              type="button"
+              onClick={() => handlePartnershipAction('reject')}
+              className="px-4 py-2 rounded-xl text-xs font-bold bg-amber-500 text-white hover:bg-amber-600 transition-colors"
+            >
+              Rejeitar
+            </button>
+            <button
+              type="button"
+              onClick={() => handlePartnershipAction('disable')}
+              className="px-4 py-2 rounded-xl text-xs font-bold bg-red-500 text-white hover:bg-red-600 transition-colors"
+            >
+              Desabilitar
+            </button>
+          </div>
         </div>
       </div>
         </>

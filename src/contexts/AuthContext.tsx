@@ -3,10 +3,12 @@ import type { User, UserRole } from '../types';
 import {
   login as apiLogin,
   logout as apiLogout,
-  fetchManagerProfile,
   buildUserFromToken,
 } from '../services/authService';
 import { TOKEN_KEY, USER_KEY, getToken } from '../services/bnfixApi';
+
+const LAST_ACTIVITY_KEY = 'bnfix_last_activity';
+const SESSION_IDLE_TIMEOUT_MS = 30 * 60 * 1000;
 
 // ── Contexto ──────────────────────────────────────────────────────────────────
 
@@ -15,7 +17,7 @@ interface AuthContextType {
   token: string | null;
   loading: boolean;
   /** Login real com email + senha contra a API BNFix */
-  login: (email: string, password: string) => Promise<boolean>;
+  login: (email: string, password: string) => Promise<{ success: boolean; message?: string }>;
   logout: () => void;
   /** Atualiza dados do usuário a partir do token armazenado */
   refreshUserData: () => Promise<void>;
@@ -30,35 +32,66 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const clearSession = useCallback(() => {
+    apiLogout();
+    setUser(null);
+    setToken(null);
+    localStorage.removeItem(LAST_ACTIVITY_KEY);
+  }, []);
+
+  const touchActivity = useCallback(() => {
+    if (getToken()) {
+      localStorage.setItem(LAST_ACTIVITY_KEY, String(Date.now()));
+    }
+  }, []);
+
+  const hydrateUserFromStorage = useCallback((storedToken: string, storedUserRaw: string | null): User | null => {
+    const tokenUser = buildUserFromToken(storedToken);
+    const storedUser = storedUserRaw ? (JSON.parse(storedUserRaw) as User) : null;
+
+    if (tokenUser && storedUser) {
+      const mergedUser: User = {
+        ...tokenUser,
+        ...storedUser,
+        backendRole: tokenUser.backendRole ?? storedUser.backendRole,
+        role: tokenUser.role ?? storedUser.role,
+      };
+      localStorage.setItem(USER_KEY, JSON.stringify(mergedUser));
+      return mergedUser;
+    }
+
+    if (tokenUser) {
+      localStorage.setItem(USER_KEY, JSON.stringify(tokenUser));
+      return tokenUser;
+    }
+
+    return storedUser;
+  }, []);
+
   // Inicializa sessão a partir do token salvo no localStorage
   useEffect(() => {
     const init = async () => {
       try {
         const storedToken = getToken();
         const storedUser  = localStorage.getItem(USER_KEY);
+        const lastActivityRaw = localStorage.getItem(LAST_ACTIVITY_KEY);
+        const lastActivity = lastActivityRaw ? Number(lastActivityRaw) : null;
+        const idleTooLong = lastActivity ? Date.now() - lastActivity > SESSION_IDLE_TIMEOUT_MS : false;
+
+        if (storedToken && idleTooLong) {
+          clearSession();
+          return;
+        }
+
+        if (storedToken && !lastActivityRaw) {
+          localStorage.setItem(LAST_ACTIVITY_KEY, String(Date.now()));
+        }
 
         if (storedToken) {
           setToken(storedToken);
-
-          // Tenta hidratar o usuário a partir do token JWT
-          const userFromToken = buildUserFromToken(storedToken);
-
-          if (userFromToken) {
-            // Se for MANAGER, busca dados mais ricos do backend
-            if (userFromToken.backendRole === 'MANAGER') {
-              try {
-                const profile = await fetchManagerProfile();
-                const enriched: User = { ...userFromToken, ...profile };
-                setUser(enriched);
-                localStorage.setItem(USER_KEY, JSON.stringify(enriched));
-                return;
-              } catch {
-                // Usa dados do token mesmo sem o perfil completo
-              }
-            }
-            setUser(userFromToken);
-          } else if (storedUser) {
-            setUser(JSON.parse(storedUser));
+          const hydratedUser = hydrateUserFromStorage(storedToken, storedUser);
+          if (hydratedUser) {
+            setUser(hydratedUser);
           }
         } else if (storedUser) {
           // Sem token mas com user salvo — sessão inválida, limpa
@@ -73,48 +106,69 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     init();
 
-    // Escuta evento de sessão expirada emitido pelo interceptor do Axios
-    const handleExpired = () => {
-      setUser(null);
-      setToken(null);
+    const activityEvents = ['click', 'keydown', 'mousemove', 'scroll', 'touchstart'] as const;
+    const handleActivity = () => touchActivity();
+
+    activityEvents.forEach((eventName) => window.addEventListener(eventName, handleActivity, { passive: true }));
+
+    const intervalId = window.setInterval(() => {
+      const storedToken = getToken();
+      const lastActivityRaw = localStorage.getItem(LAST_ACTIVITY_KEY);
+      const lastActivity = lastActivityRaw ? Number(lastActivityRaw) : null;
+
+      if (!storedToken || !lastActivity) {
+        return;
+      }
+
+      if (Date.now() - lastActivity > SESSION_IDLE_TIMEOUT_MS) {
+        clearSession();
+      }
+    }, 60_000);
+
+    return () => {
+      activityEvents.forEach((eventName) => window.removeEventListener(eventName, handleActivity));
+      window.clearInterval(intervalId);
     };
-    window.addEventListener('bnfix:session-expired', handleExpired);
-    return () => window.removeEventListener('bnfix:session-expired', handleExpired);
-  }, []);
+  }, [clearSession, hydrateUserFromStorage, touchActivity]);
 
   // ── Login ──────────────────────────────────────────────────────────────────
 
-  const login = useCallback(async (email: string, password: string): Promise<boolean> => {
+  const login = useCallback(async (email: string, password: string): Promise<{ success: boolean; message?: string }> => {
     setLoading(true);
     try {
       const { user: loggedUser, token: jwt } = await apiLogin(email, password);
       setUser(loggedUser);
       setToken(jwt);
+      touchActivity();
 
-      // Se for MANAGER, enriquece com dados do backend
-      if (loggedUser.backendRole === 'MANAGER') {
-        const profile = await fetchManagerProfile();
-        const enriched: User = { ...loggedUser, ...profile };
-        setUser(enriched);
-        localStorage.setItem(USER_KEY, JSON.stringify(enriched));
-      }
+      localStorage.setItem(USER_KEY, JSON.stringify(loggedUser));
 
-      return true;
+      return { success: true };
     } catch (err: any) {
       console.error('[AuthContext] Falha no login:', err);
-      return false;
+      const status = err?.response?.status;
+
+      if (status === 401 || status === 404) {
+        return {
+          success: false,
+          message: 'E-mail ou senha incorretos.',
+        };
+      }
+
+      return {
+        success: false,
+        message: 'Não foi possível entrar agora. Tente novamente em instantes.',
+      };
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [touchActivity]);
 
   // ── Logout ─────────────────────────────────────────────────────────────────
 
   const logout = useCallback(() => {
-    apiLogout();
-    setUser(null);
-    setToken(null);
-  }, []);
+    clearSession();
+  }, [clearSession]);
 
   // ── Refresh ────────────────────────────────────────────────────────────────
 
@@ -123,21 +177,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!storedToken) return;
 
     try {
-      const refreshed = buildUserFromToken(storedToken);
+      const refreshed = hydrateUserFromStorage(storedToken, localStorage.getItem(USER_KEY));
       if (refreshed) {
-        if (refreshed.backendRole === 'MANAGER') {
-          const profile = await fetchManagerProfile();
-          const enriched: User = { ...refreshed, ...profile };
-          setUser(enriched);
-          localStorage.setItem(USER_KEY, JSON.stringify(enriched));
-          return;
-        }
         setUser(refreshed);
       }
     } catch (err) {
       console.error('[AuthContext] Falha ao atualizar usuário:', err);
     }
-  }, []);
+  }, [hydrateUserFromStorage]);
 
   return (
     <AuthContext.Provider value={{ user, token, loading, login, logout, refreshUserData }}>

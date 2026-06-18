@@ -42,6 +42,50 @@ const API_BASE = process.env.VITE_API_BASE_URL ?? 'https://api.bnfix.com.br';
 
 app.use(express.json());
 
+// ── Proxy BNFix real API ─────────────────────────────────────────────────────
+
+app.use('/api/bnfix', async (req: Request, res: Response) => {
+  const upstreamPath = req.originalUrl.replace(/^\/api\/bnfix/, '') || '/';
+  const upstreamUrl = new URL(upstreamPath, API_BASE);
+
+  if (req.url.includes('?')) {
+    upstreamUrl.search = req.url.slice(req.url.indexOf('?'));
+  }
+
+  const headers: Record<string, string> = {};
+  for (const [key, value] of Object.entries(req.headers)) {
+    if (value === undefined) continue;
+    if (['host', 'content-length'].includes(key.toLowerCase())) continue;
+    headers[key] = Array.isArray(value) ? value.join(', ') : value;
+  }
+
+  try {
+    const upstreamResponse = await fetch(upstreamUrl, {
+      method: req.method,
+      headers,
+      body: ['GET', 'HEAD'].includes(req.method) ? undefined : JSON.stringify(req.body),
+    });
+
+    res.status(upstreamResponse.status);
+
+    const contentType = upstreamResponse.headers.get('content-type');
+    if (contentType) {
+      res.setHeader('content-type', contentType);
+    }
+
+    const setCookie = upstreamResponse.headers.get('set-cookie');
+    if (setCookie) {
+      res.setHeader('set-cookie', setCookie);
+    }
+
+    const text = await upstreamResponse.text();
+    res.send(text);
+  } catch (err) {
+    console.error('[Proxy BNFix] Falha ao encaminhar requisição:', err);
+    res.status(502).json({ error: 'Falha ao conectar com a API BNFix.' });
+  }
+});
+
 // ── Base de conhecimento para fallback do chatbot ─────────────────────────────
 
 const FAQ_KB = `

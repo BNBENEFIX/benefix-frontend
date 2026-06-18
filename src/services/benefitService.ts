@@ -19,6 +19,14 @@ import type {
   UpdateBenefitPayload,
 } from '../types';
 
+interface BackendTenantBenefit {
+  id: number;
+  benefitName: string;
+  nameProvider?: string;
+  status: boolean;
+  createdAt?: string;
+}
+
 // ── Mapeamento backend → frontend ────────────────────────────────────────────
 
 const mapBenefit = (b: BackendBenefit): Benefit => ({
@@ -39,6 +47,24 @@ const mapBenefit = (b: BackendBenefit): Benefit => ({
   providerName: b.companyName ?? 'Fornecedor',
 });
 
+const mapTenantBenefit = (b: BackendTenantBenefit): Benefit => ({
+  id:           String(b.id),
+  backendId:    b.id,
+  name:         b.benefitName,
+  description:  b.nameProvider ?? 'Benefício do tenant',
+  category:     'Saúde' as BenefitCategory,
+  supplierId:   String(b.id),
+  supplierName: b.nameProvider ?? 'Tenant',
+  rating:       0,
+  ratingCount:  0,
+  imageUrl:     'https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=500',
+  details:      b.nameProvider ?? 'Benefício do tenant',
+  status:       b.status ? 'Ativo' : 'Suspenso',
+  companyId:    undefined,
+  active:       b.status,
+  providerName: b.nameProvider ?? 'Tenant',
+});
+
 // ── Service ──────────────────────────────────────────────────────────────────
 
 export const benefitService = {
@@ -50,8 +76,8 @@ export const benefitService = {
 
   /** Benefícios do tenant do manager logado */
   getTenantBenefits: async (): Promise<Benefit[]> => {
-    const { data } = await bnfixApi.get<BackendBenefit[]>('/benefits/tenant');
-    return Array.isArray(data) ? data.map(mapBenefit) : [];
+    const { data } = await bnfixApi.get<BackendTenantBenefit[]>('/benefits/tenant');
+    return Array.isArray(data) ? data.map(mapTenantBenefit) : [];
   },
 
   /** Cria um novo benefício */
