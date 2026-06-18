@@ -6,6 +6,7 @@ import { Footer } from './components/Footer';
 import { ChatbotWidget } from './components/ChatbotWidget';
 import { LandingPage } from './pages/LandingPage';
 import { LoginPage } from './pages/LoginPage';
+import { RegisterPage } from './pages/RegisterPage';
 import { DashboardAdmin } from './pages/DashboardAdmin';
 import { DashboardSupplier } from './pages/DashboardSupplier';
 import { DashboardRH } from './pages/DashboardRH';
@@ -82,9 +83,12 @@ const AuthenticatedApp: React.FC = () => {
 
 // ── Roteamento de autenticação ────────────────────────────────────────────────
 
+type AuthScreen = 'login' | 'register';
+
 const AppContent: React.FC = () => {
   const { user, loading } = useAuth();
-  const [loggedIn, setLoggedIn] = useState(false);
+  const [loggedIn, setLoggedIn]     = useState(false);
+  const [authScreen, setAuthScreen] = useState<AuthScreen>('login');
 
   // Spinner global enquanto carrega sessão
   if (loading) {
@@ -105,8 +109,23 @@ const AppContent: React.FC = () => {
     return <AuthenticatedApp />;
   }
 
-  // Tela de login
-  return <LoginPage onLoginSuccess={() => setLoggedIn(true)} />;
+  // Tela de cadastro
+  if (authScreen === 'register') {
+    return (
+      <RegisterPage
+        onBackToLogin={() => setAuthScreen('login')}
+        onRegisterSuccess={() => setAuthScreen('login')}
+      />
+    );
+  }
+
+  // Tela de login (com link para cadastro)
+  return (
+    <LoginPage
+      onLoginSuccess={() => setLoggedIn(true)}
+      onNavigateToRegister={() => setAuthScreen('register')}
+    />
+  );
 };
 
 // ── Root ─────────────────────────────────────────────────────────────────────

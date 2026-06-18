@@ -4,9 +4,10 @@ import { Sparkles, LogIn, Eye, EyeOff, AlertCircle, Loader2 } from 'lucide-react
 
 interface LoginPageProps {
   onLoginSuccess: () => void;
+  onNavigateToRegister?: () => void;
 }
 
-export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
+export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess, onNavigateToRegister }) => {
   const { login } = useAuth();
 
   const [email,    setEmail]    = useState('');
@@ -136,12 +137,22 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
           {/* Onboarding hint */}
           <p className="text-center text-[10px] text-slate-400 leading-relaxed">
             Sua empresa ainda não tem conta?{' '}
-            <a
-              href="mailto:contato@bnfix.com.br"
-              className="text-emerald-500 font-bold hover:underline"
-            >
-              Solicite o cadastro
-            </a>
+            {onNavigateToRegister ? (
+              <button
+                type="button"
+                onClick={onNavigateToRegister}
+                className="text-emerald-500 font-bold hover:underline cursor-pointer"
+              >
+                Cadastre-se agora
+              </button>
+            ) : (
+              <a
+                href="mailto:contato@bnfix.com.br"
+                className="text-emerald-500 font-bold hover:underline"
+              >
+                Solicite o cadastro
+              </a>
+            )}
           </p>
         </div>
       </div>
