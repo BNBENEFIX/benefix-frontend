@@ -13,6 +13,7 @@ export default defineConfig(() => {
     },
     server: {
       host: '0.0.0.0',
+      allowedHosts: ['bnfix.com.br'],
       proxy: {
         '/api/bnfix': {
           target: 'https://api.bnfix.com.br',
