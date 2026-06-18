@@ -17,16 +17,24 @@ export const USER_KEY  = 'bnfix_user';
 const bnfixApi = axios.create({
   baseURL: BASE_URL,
   headers: { 'Content-Type': 'application/json' },
-  withCredentials: true,
+  // Não usamos withCredentials pois o cookie jwt é injetado manualmente
+  // no interceptor de request (o backend está em outro domínio via proxy)
+  withCredentials: false,
   timeout: 15_000,
 });
 
-// ── Request interceptor: injeta Bearer token ─────────────────────────────────
+// ── Request interceptor: injeta Bearer token e cookie jwt ────────────────────
+// O backend Quarkus autentica via cookie 'jwt'. O proxy do Vite repassa
+// o Set-Cookie do backend, mas como o domínio original é api.bnfix.com.br
+// o browser não o envia automaticamente. Por isso injetamos o token salvo
+// tanto via Authorization header quanto via Cookie header manualmente.
 
 bnfixApi.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   const token = localStorage.getItem(TOKEN_KEY);
   if (token && config.headers) {
     config.headers['Authorization'] = `Bearer ${token}`;
+    // Injeta também como cookie para compatibilidade com o backend Quarkus
+    config.headers['Cookie'] = `jwt=${token}`;
   }
   return config;
 });

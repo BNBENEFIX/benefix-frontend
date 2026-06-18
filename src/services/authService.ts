@@ -75,13 +75,31 @@ export const login = async (
   password: string,
 ): Promise<{ user: User; token: string }> => {
   const payload: LoginRequest = { email, password };
-  const { data } = await bnfixApi.post<LoginResponse>('/auth/login', payload);
+  const response = await bnfixApi.post<LoginResponse>('/auth/login', payload);
+  const { data } = response;
 
-  // O backend pode retornar { token } ou { token, user } ou apenas o token string
-  const token: string =
+  // O backend Quarkus retorna o JWT em um cookie 'jwt' via Set-Cookie.
+  // O proxy do Vite repassa o header Set-Cookie para o browser, mas como
+  // a cookie é do domínio da API (api.bnfix.com.br), o browser não a envia
+  // automaticamente nas próximas requests proxeadas. Por isso extraímos o
+  // valor do header Set-Cookie manualmente e salvamos no localStorage,
+  // para injetar via Authorization header nas próximas chamadas.
+  let token: string =
     typeof data === 'string'
       ? data
       : (data as any).token ?? (data as any).accessToken ?? (data as any).access_token ?? '';
+
+  // Tenta extrair do cookie Set-Cookie caso o body não traga o token
+  if (!token) {
+    const setCookieHeader = (response.headers['set-cookie'] as string | string[] | undefined);
+    const cookieStr = Array.isArray(setCookieHeader)
+      ? setCookieHeader.join('; ')
+      : (setCookieHeader ?? '');
+    const match = cookieStr.match(/(?:^|;\s*)jwt=([^;]+)/i);
+    if (match) {
+      token = match[1];
+    }
+  }
 
   if (!token) {
     throw new Error('Token não retornado pelo servidor. Verifique as credenciais.');
