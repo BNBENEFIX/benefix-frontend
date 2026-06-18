@@ -22,6 +22,29 @@ interface NewEmployeeForm {
 
 const EMPTY_FORM: NewEmployeeForm = { name: '', cpf: '', email: '', password: '' };
 
+// ─── Helper: verifica se o employee está ativo ───────────────────────────────
+// O backend pode retornar active como boolean (true/false) ou string ("DISABLED", "ACTIVE")
+const isEmployeeActive = (emp: BackendEmployee): boolean => {
+  if (typeof emp.active === 'boolean') return emp.active;
+  if (typeof emp.active === 'string') return (emp.active as string).toUpperCase() !== 'DISABLED';
+  return true; // fallback: se undefined, assume ativo
+};
+
+// ─── Validação de CPF (dígitos verificadores) ─────────────────────────────────
+// Evita enviar CPFs inválidos ao backend e receber 400 desnecessário.
+
+function isValidCpf(cpf: string): boolean {
+  const d = cpf.replace(/\D/g, '');
+  if (d.length !== 11 || /^(\d)\1{10}$/.test(d)) return false;
+  const calc = (factor: number) => {
+    let sum = 0;
+    for (let i = 0; i < factor - 1; i++) sum += parseInt(d[i]) * (factor - i);
+    const rem = (sum * 10) % 11;
+    return rem === 10 || rem === 11 ? 0 : rem;
+  };
+  return calc(10) === parseInt(d[9]) && calc(11) === parseInt(d[10]);
+}
+
 // ─── componente ──────────────────────────────────────────────────────────────
 
 export const DashboardRH: React.FC = () => {
@@ -35,10 +58,12 @@ export const DashboardRH: React.FC = () => {
 
   // estado da UI
   const [loading, setLoading]       = useState(true);
+  const [listError, setListError]   = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<'todos' | 'ativos' | 'inativos'>('todos');
   const [showModal, setShowModal]   = useState(false);
   const [formData, setFormData]     = useState<NewEmployeeForm>(EMPTY_FORM);
+  const [formError, setFormError]   = useState<string>('');
   const [formLoading, setFormLoading] = useState(false);
   const [expandedId, setExpandedId] = useState<number | null>(null);
 
@@ -55,6 +80,7 @@ export const DashboardRH: React.FC = () => {
 
   const loadData = useCallback(async () => {
     setLoading(true);
+    setListError(null);
     try {
       const [emps, comp, anns, met] = await Promise.allSettled([
         employeeService.list(),
@@ -63,12 +89,22 @@ export const DashboardRH: React.FC = () => {
         metricsService.getDashboardMetrics(),
       ]);
 
-      if (emps.status === 'fulfilled')  setEmployees(emps.value);
+      if (emps.status === 'fulfilled') {
+        setEmployees(emps.value);
+        setListError(null);
+      } else {
+        const msg: string = (emps.reason as any)?.response?.data?.message ?? '';
+        console.warn('[DashboardRH] GET /employees falhou (bug do backend):', msg);
+        // Não apaga a lista local — ela pode já ter dados de operações anteriores
+        // Só exibe aviso se a lista ainda estiver vazia
+        setListError('list_unavailable');
+      }
+
       if (comp.status === 'fulfilled')  setCompany(comp.value);
       if (anns.status === 'fulfilled')  setAnnouncements(anns.value);
       if (met.status === 'fulfilled')   setMetrics(met.value);
     } catch (err) {
-      console.error('[DashboardRH] loadData:', err);
+      console.error('[DashboardRH] loadData erro inesperado:', err);
     } finally {
       setLoading(false);
     }
@@ -80,23 +116,73 @@ export const DashboardRH: React.FC = () => {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
+    setFormError('');
+
     if (!company) { showToast('Empresa não carregada. Recarregue a página.', 'error'); return; }
+
+    // Validação de CPF antes de enviar ao backend
+    const rawCpf = formData.cpf.replace(/\D/g, '');
+    if (!isValidCpf(rawCpf)) {
+      setFormError('CPF inválido. Verifique os dígitos informados.');
+      return;
+    }
+
+    if (formData.password.length < 6) {
+      setFormError('A senha deve ter pelo menos 6 caracteres.');
+      return;
+    }
+
     setFormLoading(true);
     try {
-      await employeeService.create({
-        name:      formData.name,
-        cpf:       formData.cpf.replace(/\D/g, ''),
-        email:     formData.email,
+      const created = await employeeService.create({
+        name:      formData.name.trim(),
+        cpf:       rawCpf,
+        email:     formData.email.trim().toLowerCase(),
         password:  formData.password,
         companyId: company.id,
       });
-      showToast(`Colaborador "${formData.name}" cadastrado com sucesso.`);
+
+      // O backend cria funcionários com status DISABLED por padrão.
+      // Ativamos automaticamente logo após a criação.
+      if (created.id) {
+        try {
+          await employeeService.activate(created.id);
+          console.log(`[DashboardRH] Funcionário ${created.id} ativado automaticamente.`);
+          // Atualiza lista local diretamente — não depende do GET /employees com bug
+          const activated: BackendEmployee = { ...created, active: true };
+          setEmployees(prev => [activated, ...prev.filter(e => e.id !== created.id)]);
+          setListError(null);
+        } catch (activateErr: any) {
+          console.warn('[DashboardRH] Falha ao ativar automaticamente:', activateErr?.response?.data);
+          // Adiciona à lista local como DISABLED com aviso
+          setEmployees(prev => [created, ...prev.filter(e => e.id !== created.id)]);
+          showToast(`Colaborador "${formData.name}" criado, mas precisa ser ativado manualmente antes de fazer login.`, 'info');
+          setFormData(EMPTY_FORM);
+          setFormError('');
+          setShowModal(false);
+          return;
+        }
+      }
+
+      showToast(`Colaborador "${formData.name}" cadastrado e ativado com sucesso.`);
       setFormData(EMPTY_FORM);
+      setFormError('');
       setShowModal(false);
-      await loadData();
+      // Não chama loadData() — GET /employees tem bug no backend (Mutiny.Session)
+      // A lista já foi atualizada localmente acima
     } catch (err: any) {
-      const msg = err?.response?.data?.message ?? 'Falha ao cadastrar colaborador.';
-      showToast(msg, 'error');
+      const status = err?.response?.status;
+      const backendMsg = err?.response?.data?.message ?? '';
+
+      if (status === 400 && backendMsg.toLowerCase().includes('cpf')) {
+        setFormError('CPF inválido ou já cadastrado no sistema.');
+      } else if (status === 409 || backendMsg.toLowerCase().includes('duplicate') || backendMsg.toLowerCase().includes('already')) {
+        setFormError('E-mail ou CPF já cadastrado para outro colaborador.');
+      } else if (status === 500) {
+        setFormError('Erro interno do servidor. Possível e-mail ou CPF duplicado. Verifique os dados.');
+      } else {
+        setFormError(backendMsg || 'Falha ao cadastrar colaborador. Tente novamente.');
+      }
     } finally {
       setFormLoading(false);
     }
@@ -105,8 +191,9 @@ export const DashboardRH: React.FC = () => {
   const handleActivate = async (emp: BackendEmployee) => {
     try {
       await employeeService.activate(emp.id);
+      // Atualiza localmente — não depende do GET /employees com bug
+      setEmployees(prev => prev.map(e => e.id === emp.id ? { ...e, active: true } : e));
       showToast(`${emp.name} foi ativado com sucesso.`);
-      await loadData();
     } catch {
       showToast('Falha ao ativar colaborador.', 'error');
     }
@@ -115,10 +202,17 @@ export const DashboardRH: React.FC = () => {
   const handleDisable = async (emp: BackendEmployee) => {
     try {
       await employeeService.disable(emp.id);
+      setEmployees(prev => prev.map(e => e.id === emp.id ? { ...e, active: false } : e));
       showToast(`${emp.name} foi desativado.`, 'info');
-      await loadData();
-    } catch {
-      showToast('Falha ao desativar colaborador.', 'error');
+    } catch (err: any) {
+      const msg: string = err?.response?.data?.message ?? '';
+      // Se o backend diz que já está desativado, atualiza localmente mesmo assim
+      if (msg.toLowerCase().includes('already disabled')) {
+        setEmployees(prev => prev.map(e => e.id === emp.id ? { ...e, active: false } : e));
+        showToast(`${emp.name} já estava desativado.`, 'info');
+      } else {
+        showToast('Falha ao desativar colaborador.', 'error');
+      }
     }
   };
 
@@ -152,13 +246,13 @@ export const DashboardRH: React.FC = () => {
       emp.cpf.includes(searchTerm);
     const matchStatus =
       filterStatus === 'todos' ? true :
-      filterStatus === 'ativos' ? emp.active !== false :
-      emp.active === false;
+      filterStatus === 'ativos' ? isEmployeeActive(emp) :
+      !isEmployeeActive(emp);
     return matchSearch && matchStatus;
   });
 
-  const activeCount   = employees.filter(e => e.active !== false).length;
-  const inactiveCount = employees.filter(e => e.active === false).length;
+  const activeCount   = employees.filter(e => isEmployeeActive(e)).length;
+  const inactiveCount = employees.filter(e => !isEmployeeActive(e)).length;
 
   // ── loading ────────────────────────────────────────────────────────────────
 
@@ -207,7 +301,7 @@ export const DashboardRH: React.FC = () => {
             className="flex items-center gap-1.5 px-4 py-2 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 text-slate-700 dark:text-slate-300 font-bold text-xs rounded-xl shadow-sm transition-all cursor-pointer">
             PDF
           </button>
-          <button onClick={() => { setFormData(EMPTY_FORM); setShowModal(true); }}
+          <button onClick={() => { setFormData(EMPTY_FORM); setFormError(''); setShowModal(true); }}
             className="flex items-center gap-1.5 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs rounded-xl shadow-md transition-all cursor-pointer">
             <UserPlus className="w-4 h-4" /> Novo Colaborador
           </button>
@@ -288,7 +382,20 @@ export const DashboardRH: React.FC = () => {
           </div>
         </div>
 
-        {filtered.length === 0 ? (
+        {listError === 'list_unavailable' && employees.length === 0 ? (
+          <div className="flex items-start gap-2.5 p-4 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40 rounded-xl text-amber-700 dark:text-amber-400 text-xs">
+            <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <p className="font-bold">Lista de colaboradores indisponível</p>
+              <p className="text-amber-600 dark:text-amber-500">
+                O servidor está com um problema interno no endpoint de listagem. Os colaboradores aparecerão aqui após você criar o primeiro nesta sessão, ou quando o backend for corrigido.
+              </p>
+              <button onClick={loadData} className="mt-1 flex items-center gap-1 font-bold underline cursor-pointer hover:no-underline">
+                <RefreshCw className="w-3 h-3" /> Tentar novamente
+              </button>
+            </div>
+          </div>
+        ) : filtered.length === 0 ? (
           <div className="p-10 text-center border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-2xl">
             <Users className="w-8 h-8 text-slate-300 dark:text-slate-700 mx-auto mb-3" />
             <p className="text-sm font-semibold text-slate-600 dark:text-slate-400">
@@ -327,15 +434,15 @@ export const DashboardRH: React.FC = () => {
                       <td className="py-3 px-2 font-mono text-slate-400">{emp.cpf}</td>
                       <td className="py-3 px-2 text-center">
                         <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
-                          emp.active !== false
+                          isEmployeeActive(emp)
                             ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
                             : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
                         }`}>
-                          {emp.active !== false ? 'Ativo' : 'Inativo'}
+                          {isEmployeeActive(emp) ? 'Ativo' : 'Inativo'}
                         </span>
                       </td>
                       <td className="py-3 px-2 text-right" onClick={e => e.stopPropagation()}>
-                        {emp.active !== false ? (
+                        {isEmployeeActive(emp) ? (
                           <button onClick={() => handleDisable(emp)}
                             className="px-3 py-1 text-[10px] font-bold bg-red-50 text-red-600 hover:bg-red-500 hover:text-white border border-red-200 dark:border-red-900/30 dark:bg-red-900/10 dark:text-red-400 rounded-lg transition-all cursor-pointer">
                             Desativar
@@ -366,8 +473,8 @@ export const DashboardRH: React.FC = () => {
                             </div>
                             <div>
                               <span className="text-slate-400 font-bold uppercase block">Situação</span>
-                              <span className={`font-bold ${emp.active !== false ? 'text-emerald-600' : 'text-red-500'}`}>
-                                {emp.active !== false ? 'Acesso liberado' : 'Acesso bloqueado'}
+                              <span className={`font-bold ${isEmployeeActive(emp) ? 'text-emerald-600' : 'text-red-500'}`}>
+                                {isEmployeeActive(emp) ? 'Acesso liberado' : 'Acesso bloqueado'}
                               </span>
                             </div>
                           </div>
@@ -439,7 +546,7 @@ export const DashboardRH: React.FC = () => {
       {showModal && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="w-full max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-2xl space-y-5 relative">
-            <button onClick={() => setShowModal(false)}
+            <button onClick={() => { setShowModal(false); setFormError(''); }}
               className="absolute top-4 right-4 p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-400 cursor-pointer">
               <X className="w-5 h-5" />
             </button>
@@ -453,6 +560,13 @@ export const DashboardRH: React.FC = () => {
             </div>
 
             <form onSubmit={handleCreate} className="space-y-3">
+              {/* Erro inline do formulário */}
+              {formError && (
+                <div className="flex items-start gap-2 p-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/50 rounded-xl text-red-600 dark:text-red-400 text-xs">
+                  <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                  <span>{formError}</span>
+                </div>
+              )}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="sm:col-span-2">
                   <label className="text-[9px] font-bold text-slate-400 uppercase block mb-1">Nome completo *</label>
@@ -481,7 +595,7 @@ export const DashboardRH: React.FC = () => {
               </div>
 
               <div className="flex justify-end gap-2 pt-2">
-                <button type="button" onClick={() => setShowModal(false)}
+                <button type="button" onClick={() => { setShowModal(false); setFormError(''); }}
                   className="px-4 py-2 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs rounded-xl cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-all">
                   Cancelar
                 </button>

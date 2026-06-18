@@ -40,7 +40,10 @@ const app = express();
 const PORT = Number(process.env.PORT ?? 3000);
 const API_BASE = process.env.VITE_API_BASE_URL ?? 'https://api.bnfix.com.br';
 
-app.use(express.json());
+app.use(express.json({
+  // Não rejeita body vazio — alguns endpoints PUT/PATCH não enviam body
+  strict: false,
+}));
 
 // ── Proxy BNFix real API ─────────────────────────────────────────────────────
 
@@ -55,16 +58,32 @@ app.use('/api/bnfix', async (req: Request, res: Response) => {
   const headers: Record<string, string> = {};
   for (const [key, value] of Object.entries(req.headers)) {
     if (value === undefined) continue;
-    if (['host', 'content-length'].includes(key.toLowerCase())) continue;
+    if (['host', 'content-length', 'cookie'].includes(key.toLowerCase())) continue;
     headers[key] = Array.isArray(value) ? value.join(', ') : value;
+  }
+
+  // O backend Quarkus autentica via cookie 'jwt'. Extraímos o token do
+  // header Authorization (Bearer <token>) e injetamos como cookie.
+  // Removemos o Authorization para evitar conflito no backend que tenta
+  // validar ambos (Bearer + cookie) com lógicas diferentes.
+  const authHeader = req.headers['authorization'] ?? '';
+  const tokenMatch = (typeof authHeader === 'string' ? authHeader : '').match(/^Bearer\s+(.+)$/i);
+  if (tokenMatch) {
+    headers['Cookie'] = `jwt=${tokenMatch[1]}`;
+    delete headers['authorization'];
+    delete headers['Authorization'];
   }
 
   try {
     const upstreamResponse = await fetch(upstreamUrl, {
       method: req.method,
       headers,
-      body: ['GET', 'HEAD'].includes(req.method) ? undefined : JSON.stringify(req.body),
+      body: ['GET', 'HEAD'].includes(req.method) ? undefined
+          : (req.body == null || Object.keys(req.body).length === 0) ? undefined
+          : JSON.stringify(req.body),
     });
+
+    console.log(`[Proxy] ${req.method} ${upstreamUrl.pathname} → ${upstreamResponse.status}`);
 
     res.status(upstreamResponse.status);
 

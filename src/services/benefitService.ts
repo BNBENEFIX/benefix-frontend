@@ -23,24 +23,41 @@ interface BackendTenantBenefit {
   id: number;
   benefitName: string;
   nameProvider?: string;
+  categoryId?: number;
   status: boolean;
   createdAt?: string;
 }
+
+// ── Mapeamento categoryId → nome da categoria ───────────────────────────────
+
+const CATEGORY_MAP: Record<number, BenefitCategory> = {
+  0: 'Saúde',
+  1: 'Educação',
+  2: 'Alimentação',
+  3: 'Transporte',
+  4: 'Lazer',
+  5: 'Bem-estar',
+};
+
+const resolveCategoryName = (categoryId?: number): BenefitCategory => {
+  if (categoryId == null) return 'Saúde';
+  return CATEGORY_MAP[categoryId] ?? 'Saúde';
+};
 
 // ── Mapeamento backend → frontend ────────────────────────────────────────────
 
 const mapBenefit = (b: BackendBenefit): Benefit => ({
   id:           String(b.id),
   backendId:    b.id,
-  name:         b.name,
-  description:  b.description,
-  category:     'Saúde' as BenefitCategory,      // backend não retorna categoria ainda
-  supplierId:   String(b.companyId),
-  supplierName: b.companyName ?? 'Fornecedor',
+  name:         b.name ?? (b as any).benefitName ?? 'Sem nome',
+  description:  b.description ?? (b as any).nameProvider ?? '',
+  category:     resolveCategoryName((b as any).categoryId),
+  supplierId:   String(b.companyId ?? ''),
+  supplierName: b.companyName ?? (b as any).nameProvider ?? 'Fornecedor',
   rating:       0,
   ratingCount:  0,
   imageUrl:     'https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=500',
-  details:      b.description,
+  details:      b.description ?? '',
   status:       b.active === false ? 'Suspenso' : 'Ativo',
   companyId:    b.companyId,
   active:       b.active,
@@ -52,7 +69,7 @@ const mapTenantBenefit = (b: BackendTenantBenefit): Benefit => ({
   backendId:    b.id,
   name:         b.benefitName,
   description:  b.nameProvider ?? 'Benefício do tenant',
-  category:     'Saúde' as BenefitCategory,
+  category:     resolveCategoryName(b.categoryId),
   supplierId:   String(b.id),
   supplierName: b.nameProvider ?? 'Tenant',
   rating:       0,
@@ -82,8 +99,12 @@ export const benefitService = {
 
   /** Cria um novo benefício */
   create: async (payload: CreateBenefitPayload): Promise<Benefit> => {
-    const { data } = await bnfixApi.post<BackendBenefit>('/benefits', payload);
-    return mapBenefit(data);
+    const { data } = await bnfixApi.post('/benefits', payload);
+    // O backend pode retornar BackendBenefit ou BackendTenantBenefit — normaliza
+    if (data && data.benefitName) {
+      return mapTenantBenefit(data as BackendTenantBenefit);
+    }
+    return mapBenefit(data as BackendBenefit);
   },
 
   /** Atualiza nome/descrição de um benefício */
@@ -99,13 +120,15 @@ export const benefitService = {
 
   /** Ativa um benefício desativado */
   activate: async (id: number): Promise<Benefit> => {
-    const { data } = await bnfixApi.put<BackendBenefit>(`/benefits/${id}/activate`);
-    return mapBenefit(data);
+    const { data } = await bnfixApi.put(`/benefits/${id}/activate`, {});
+    if (data && data.benefitName) return mapTenantBenefit(data as any);
+    return mapBenefit(data as BackendBenefit);
   },
 
   /** Desativa um benefício */
   deactivate: async (id: number): Promise<Benefit> => {
-    const { data } = await bnfixApi.put<BackendBenefit>(`/benefits/${id}/deactivate`);
-    return mapBenefit(data);
+    const { data } = await bnfixApi.put(`/benefits/${id}/deactivate`, {});
+    if (data && data.benefitName) return mapTenantBenefit(data as any);
+    return mapBenefit(data as BackendBenefit);
   },
 };

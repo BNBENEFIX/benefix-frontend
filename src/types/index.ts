@@ -253,6 +253,7 @@ export interface CreateBenefitPayload {
   name: string;
   description: string;
   companyId: number;
+  categoryId?: number;
 }
 
 export interface UpdateBenefitPayload {

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState } from 'react';
 import {
   Sparkles,
   UserPlus,
@@ -23,11 +23,10 @@ interface RegisterPageProps {
 }
 
 // ── Helpers de máscara ────────────────────────────────────────────────────────
-// Recebem APENAS dígitos e retornam a string formatada para exibição.
 
-const cleanDigits = (value: string) => value.replace(/\D/g, '');
+const onlyDigits = (v: string) => v.replace(/\D/g, '');
 
-const applyMaskCnpj = (digits: string): string => {
+const displayCnpj = (digits: string): string => {
   const d = digits.slice(0, 14);
   if (d.length <= 2)  return d;
   if (d.length <= 5)  return `${d.slice(0,2)}.${d.slice(2)}`;
@@ -36,7 +35,7 @@ const applyMaskCnpj = (digits: string): string => {
   return `${d.slice(0,2)}.${d.slice(2,5)}.${d.slice(5,8)}/${d.slice(8,12)}-${d.slice(12)}`;
 };
 
-const applyMaskCpf = (digits: string): string => {
+const displayCpf = (digits: string): string => {
   const d = digits.slice(0, 11);
   if (d.length <= 3)  return d;
   if (d.length <= 6)  return `${d.slice(0,3)}.${d.slice(3)}`;
@@ -46,85 +45,110 @@ const applyMaskCpf = (digits: string): string => {
 
 // ── Validação ─────────────────────────────────────────────────────────────────
 
-const isValidCnpj  = (digits: string) => digits.length === 14;
-const isValidCpf   = (digits: string) => digits.length === 11;
-const isValidEmail = (email: string)  => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+const isValidCnpj  = (d: string) => d.length === 14;
+const isValidCpf   = (d: string) => d.length === 11;
+const isValidEmail = (e: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
 
-// ── Hook para input com máscara sem salto de cursor ───────────────────────────
-// Armazena os dígitos brutos no estado e usa uma ref para restaurar a posição
-// correta do cursor após a re-renderização do React.
+// ── Sub-componentes definidos FORA do componente principal ────────────────────
+// Definir componentes dentro do render body faz o React desmontar e remontar
+// o DOM a cada render, destruindo o foco e a posição do cursor.
 
-function useMaskedInput(
-  applyMask: (digits: string) => string,
-  maxDigits: number,
-) {
-  const [digits, setDigits] = useState('');
-  const inputRef = useRef<HTMLInputElement>(null);
-  // Guarda a posição desejada do cursor para restaurar depois do render
-  const cursorPos = useRef<number | null>(null);
+interface FieldProps {
+  label: string;
+  icon: React.ElementType;
+  error?: string;
+  children: React.ReactNode;
+}
 
-  // Após cada render, restaura a posição do cursor se há uma pendente
-  const syncCursor = useCallback(() => {
-    if (cursorPos.current !== null && inputRef.current) {
-      inputRef.current.setSelectionRange(cursorPos.current, cursorPos.current);
-      cursorPos.current = null;
-    }
-  }, []);
+const Field: React.FC<FieldProps> = ({ label, icon: Icon, error, children }) => (
+  <div className="flex flex-col gap-1.5">
+    <label className="flex items-center gap-1.5 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+      <Icon className="w-3 h-3" />
+      {label}
+    </label>
+    {children}
+    {error && (
+      <p className="flex items-center gap-1 text-[11px] text-red-500">
+        <AlertCircle className="w-3 h-3 shrink-0" />
+        {error}
+      </p>
+    )}
+  </div>
+);
 
-  const handleChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const el = e.currentTarget;
-      const selEnd = el.selectionEnd ?? el.value.length;
+interface StepIndicatorProps {
+  step: 1 | 2;
+}
 
-      // Conta quantos dígitos existem antes do cursor na string formatada atual
-      const charsBeforeCursor = el.value.slice(0, selEnd);
-      const digitsBeforeCursor = charsBeforeCursor.replace(/\D/g, '').length;
+const StepIndicator: React.FC<StepIndicatorProps> = ({ step }) => (
+  <div className="flex items-center justify-center gap-3 mb-6">
+    {([1, 2] as const).map((s) => (
+      <React.Fragment key={s}>
+        <div
+          className={`flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold transition-all
+            ${s === step
+              ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/30'
+              : s < step
+              ? 'bg-emerald-200 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400'
+              : 'bg-slate-100 dark:bg-slate-800 text-slate-400'
+            }`}
+        >
+          {s < step ? <CheckCircle2 className="w-4 h-4" /> : s}
+        </div>
+        {s < 2 && (
+          <div
+            className={`h-0.5 w-10 rounded transition-all ${
+              step > s ? 'bg-emerald-400' : 'bg-slate-200 dark:bg-slate-700'
+            }`}
+          />
+        )}
+      </React.Fragment>
+    ))}
+  </div>
+);
 
-      // Novos dígitos brutos
-      const newDigits = cleanDigits(el.value).slice(0, maxDigits);
-      setDigits(newDigits);
+const inputCls = (hasError?: string) =>
+  `p-3 bg-slate-50 dark:bg-slate-950 border rounded-xl outline-none text-sm
+   text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:ring-1
+   transition-all disabled:opacity-50 ${
+     hasError
+       ? 'border-red-400 focus:border-red-500 focus:ring-red-500'
+       : 'border-slate-200 dark:border-slate-800 focus:border-emerald-500 focus:ring-emerald-500'
+   }`;
 
-      // Calcula onde o cursor deve ficar na nova string formatada:
-      // avança pela string formatada contando dígitos até bater o alvo
-      const newFormatted = applyMask(newDigits);
-      let count = 0;
-      let newPos = newFormatted.length;
-      for (let i = 0; i < newFormatted.length; i++) {
-        if (/\d/.test(newFormatted[i])) {
-          count++;
-          if (count === digitsBeforeCursor) {
-            newPos = i + 1;
-            break;
-          }
-        }
-      }
+// ── Indicador de força de senha ───────────────────────────────────────────────
 
-      cursorPos.current = newPos;
-    },
-    [applyMask, maxDigits],
+const PasswordStrength: React.FC<{ password: string }> = ({ password }) => {
+  const checks = [
+    password.length >= 8,
+    /[A-Z]/.test(password),
+    /[0-9]/.test(password),
+    /[^A-Za-z0-9]/.test(password),
+  ];
+  const strength = checks.filter(Boolean).length;
+  const colors   = ['bg-red-400', 'bg-orange-400', 'bg-yellow-400', 'bg-emerald-400'];
+  const labels   = ['Muito fraca', 'Fraca', 'Razoável', 'Forte'];
+
+  return (
+    <div className="space-y-1.5">
+      <div className="flex gap-1">
+        {[0, 1, 2, 3].map((i) => (
+          <div
+            key={i}
+            className={`h-1 flex-1 rounded-full transition-all ${
+              i < strength ? colors[strength - 1] : 'bg-slate-200 dark:bg-slate-700'
+            }`}
+          />
+        ))}
+      </div>
+      <p className={`text-[10px] font-medium ${strength >= 3 ? 'text-emerald-500' : 'text-slate-400'}`}>
+        {labels[strength - 1] ?? 'Digite uma senha'}
+      </p>
+    </div>
   );
+};
 
-  return {
-    digits,
-    inputRef,
-    displayValue: applyMask(digits),
-    handleChange,
-    syncCursor,
-    reset: () => setDigits(''),
-  };
-}
-
-// ── Tipos de estado do formulário ────────────────────────────────────────────
-
-interface FormState {
-  // Empresa
-  companyName: string;
-  // Manager (responsável RH)
-  managerName: string;
-  email: string;
-  password: string;
-  confirmPassword: string;
-}
+// ── Tipos de estado ───────────────────────────────────────────────────────────
 
 interface FormErrors {
   companyName?: string;
@@ -136,73 +160,72 @@ interface FormErrors {
   confirmPassword?: string;
 }
 
-// ── Componente principal ─────────────────────────────────────────────────────
+// ── Componente principal ──────────────────────────────────────────────────────
 
 export const RegisterPage: React.FC<RegisterPageProps> = ({
   onBackToLogin,
   onRegisterSuccess,
 }) => {
   const [step, setStep] = useState<1 | 2>(1);
-  const [form, setForm] = useState<FormState>({
-    companyName:     '',
-    managerName:     '',
-    email:           '',
-    password:        '',
-    confirmPassword: '',
-  });
-  const [errors, setErrors]           = useState<FormErrors>({});
-  const [showPwd, setShowPwd]         = useState(false);
+
+  // Campos de texto simples
+  const [companyName,     setCompanyName]     = useState('');
+  const [managerName,     setManagerName]     = useState('');
+  const [email,           setEmail]           = useState('');
+  const [password,        setPassword]        = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+
+  // Campos de máscara: armazenam apenas dígitos; exibição calculada no render
+  const [cnpjDigits, setCnpjDigits] = useState('');
+  const [cpfDigits,  setCpfDigits]  = useState('');
+
+  const [errors,      setErrors]      = useState<FormErrors>({});
+  const [showPwd,     setShowPwd]     = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
-  const [loading, setLoading]         = useState(false);
-  const [apiError, setApiError]       = useState('');
-  const [success, setSuccess]         = useState(false);
+  const [loading,     setLoading]     = useState(false);
+  const [apiError,    setApiError]    = useState('');
+  const [success,     setSuccess]     = useState(false);
 
-  // Campos com máscara (gerenciados separadamente para evitar salto de cursor)
-  const cnpj = useMaskedInput(applyMaskCnpj, 14);
-  const cpf  = useMaskedInput(applyMaskCpf, 11);
+  // ── Handlers dos campos com máscara ───────────────────────────────────────
 
-  // ── Atualização genérica de campos ────────────────────────────────────────
-
-  const set = (field: keyof FormState, value: string) => {
-    setForm((prev) => ({ ...prev, [field]: value }));
-    setErrors((prev) => ({ ...prev, [field]: undefined }));
+  const handleCnpjChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setCnpjDigits(onlyDigits(e.target.value).slice(0, 14));
+    setErrors((prev) => ({ ...prev, cnpj: undefined }));
     setApiError('');
   };
 
-  const clearFieldError = (field: keyof FormErrors) => {
-    setErrors((prev) => ({ ...prev, [field]: undefined }));
+  const handleCpfChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setCpfDigits(onlyDigits(e.target.value).slice(0, 11));
+    setErrors((prev) => ({ ...prev, cpf: undefined }));
     setApiError('');
   };
 
-  // ── Validação por etapa ───────────────────────────────────────────────────
+  // ── Validação ─────────────────────────────────────────────────────────────
 
   const validateStep1 = (): boolean => {
     const e: FormErrors = {};
-    if (!form.companyName.trim())    e.companyName = 'Informe o nome da empresa.';
-    if (!isValidCnpj(cnpj.digits))   e.cnpj = 'CNPJ inválido — informe os 14 dígitos.';
+    if (!companyName.trim())        e.companyName = 'Informe o nome da empresa.';
+    if (!isValidCnpj(cnpjDigits))   e.cnpj = 'CNPJ inválido — informe os 14 dígitos.';
     setErrors(e);
     return Object.keys(e).length === 0;
   };
 
   const validateStep2 = (): boolean => {
     const e: FormErrors = {};
-    if (!form.managerName.trim())            e.managerName = 'Informe o nome completo.';
-    if (!isValidCpf(cpf.digits))             e.cpf = 'CPF inválido — informe os 11 dígitos.';
-    if (!isValidEmail(form.email))           e.email = 'E-mail inválido.';
-    if (form.password.length < 8)            e.password = 'A senha deve ter pelo menos 8 caracteres.';
-    if (form.password !== form.confirmPassword)
-                                             e.confirmPassword = 'As senhas não coincidem.';
+    if (!managerName.trim())              e.managerName = 'Informe o nome completo.';
+    if (!isValidCpf(cpfDigits))           e.cpf = 'CPF inválido — informe os 11 dígitos.';
+    if (!isValidEmail(email))             e.email = 'E-mail inválido.';
+    if (password.length < 8)              e.password = 'A senha deve ter pelo menos 8 caracteres.';
+    if (password !== confirmPassword)     e.confirmPassword = 'As senhas não coincidem.';
     setErrors(e);
     return Object.keys(e).length === 0;
   };
-
-  // ── Avançar etapa ─────────────────────────────────────────────────────────
 
   const handleNext = () => {
     if (validateStep1()) setStep(2);
   };
 
-  // ── Submissão final ───────────────────────────────────────────────────────
+  // ── Submit ────────────────────────────────────────────────────────────────
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -213,24 +236,19 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
 
     try {
       await onboardingService.register({
-        company: {
-          name: form.companyName.trim(),
-          cnpj: cnpj.digits,
-        },
+        company: { name: companyName.trim(), cnpj: cnpjDigits },
         manager: {
-          name:     form.managerName.trim(),
-          cpf:      cpf.digits,
-          email:    form.email.trim().toLowerCase(),
-          password: form.password,
+          name:     managerName.trim(),
+          cpf:      cpfDigits,
+          email:    email.trim().toLowerCase(),
+          password,
         },
       });
-
       setSuccess(true);
       setTimeout(() => onRegisterSuccess(), 3000);
     } catch (err: any) {
       const status = err?.response?.status;
       const detail = err?.response?.data?.message ?? err?.response?.data?.detail ?? '';
-
       if (status === 409) {
         setApiError('Empresa ou e-mail já cadastrado. Verifique os dados ou faça login.');
       } else if (status === 400) {
@@ -266,71 +284,6 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
     );
   }
 
-  // ── Indicador de progresso ────────────────────────────────────────────────
-
-  const StepIndicator = () => (
-    <div className="flex items-center justify-center gap-3 mb-6">
-      {([1, 2] as const).map((s) => (
-        <React.Fragment key={s}>
-          <div
-            className={`flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold transition-all
-              ${s === step
-                ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/30'
-                : s < step
-                ? 'bg-emerald-200 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400'
-                : 'bg-slate-100 dark:bg-slate-800 text-slate-400'
-              }`}
-          >
-            {s < step ? <CheckCircle2 className="w-4 h-4" /> : s}
-          </div>
-          {s < 2 && (
-            <div
-              className={`h-0.5 w-10 rounded transition-all ${
-                step > s ? 'bg-emerald-400' : 'bg-slate-200 dark:bg-slate-700'
-              }`}
-            />
-          )}
-        </React.Fragment>
-      ))}
-    </div>
-  );
-
-  // ── Campo reutilizável ────────────────────────────────────────────────────
-
-  const Field = ({
-    label,
-    icon: Icon,
-    error,
-    children,
-  }: {
-    label: string;
-    icon: React.ElementType;
-    error?: string;
-    children: React.ReactNode;
-  }) => (
-    <div className="flex flex-col gap-1.5">
-      <label className="flex items-center gap-1.5 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-        <Icon className="w-3 h-3" />
-        {label}
-      </label>
-      {children}
-      {error && (
-        <p className="flex items-center gap-1 text-[11px] text-red-500">
-          <AlertCircle className="w-3 h-3 shrink-0" />
-          {error}
-        </p>
-      )}
-    </div>
-  );
-
-  const inputClass = (hasError?: string) =>
-    `p-3 bg-slate-50 dark:bg-slate-950 border rounded-xl outline-none text-sm text-slate-800 dark:text-slate-100 placeholder-slate-400
-     focus:ring-1 transition-all disabled:opacity-50
-     ${hasError
-       ? 'border-red-400 focus:border-red-500 focus:ring-red-500'
-       : 'border-slate-200 dark:border-slate-800 focus:border-emerald-500 focus:ring-emerald-500'
-     }`;
-
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
@@ -361,7 +314,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
             </p>
           </div>
 
-          <StepIndicator />
+          <StepIndicator step={step} />
 
           {/* Erro da API */}
           {apiError && (
@@ -378,24 +331,24 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
                 <input
                   type="text"
                   placeholder="Acme Corporação Ltda"
-                  value={form.companyName}
-                  onChange={(e) => set('companyName', e.target.value)}
-                  className={inputClass(errors.companyName)}
+                  value={companyName}
+                  onChange={(e) => {
+                    setCompanyName(e.target.value);
+                    setErrors((p) => ({ ...p, companyName: undefined }));
+                  }}
+                  className={inputCls(errors.companyName)}
                   autoFocus
                 />
               </Field>
 
               <Field label="CNPJ" icon={CreditCard} error={errors.cnpj}>
                 <input
-                  ref={cnpj.inputRef}
                   type="text"
                   inputMode="numeric"
                   placeholder="00.000.000/0000-00"
-                  value={cnpj.displayValue}
-                  onChange={(e) => { cnpj.handleChange(e); clearFieldError('cnpj'); }}
-                  onKeyUp={cnpj.syncCursor}
-                  className={inputClass(errors.cnpj)}
-                  maxLength={18}
+                  value={displayCnpj(cnpjDigits)}
+                  onChange={handleCnpjChange}
+                  className={inputCls(errors.cnpj)}
                 />
               </Field>
 
@@ -417,9 +370,12 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
                 <input
                   type="text"
                   placeholder="Maria Silva"
-                  value={form.managerName}
-                  onChange={(e) => set('managerName', e.target.value)}
-                  className={inputClass(errors.managerName)}
+                  value={managerName}
+                  onChange={(e) => {
+                    setManagerName(e.target.value);
+                    setErrors((p) => ({ ...p, managerName: undefined }));
+                  }}
+                  className={inputCls(errors.managerName)}
                   disabled={loading}
                   autoFocus
                 />
@@ -427,15 +383,12 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
 
               <Field label="CPF" icon={CreditCard} error={errors.cpf}>
                 <input
-                  ref={cpf.inputRef}
                   type="text"
                   inputMode="numeric"
                   placeholder="000.000.000-00"
-                  value={cpf.displayValue}
-                  onChange={(e) => { cpf.handleChange(e); clearFieldError('cpf'); }}
-                  onKeyUp={cpf.syncCursor}
-                  className={inputClass(errors.cpf)}
-                  maxLength={14}
+                  value={displayCpf(cpfDigits)}
+                  onChange={handleCpfChange}
+                  className={inputCls(errors.cpf)}
                   disabled={loading}
                 />
               </Field>
@@ -444,9 +397,12 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
                 <input
                   type="email"
                   placeholder="maria@empresa.com"
-                  value={form.email}
-                  onChange={(e) => set('email', e.target.value)}
-                  className={inputClass(errors.email)}
+                  value={email}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    setErrors((p) => ({ ...p, email: undefined }));
+                  }}
+                  className={inputCls(errors.email)}
                   autoComplete="email"
                   disabled={loading}
                 />
@@ -457,9 +413,12 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
                   <input
                     type={showPwd ? 'text' : 'password'}
                     placeholder="Mínimo 8 caracteres"
-                    value={form.password}
-                    onChange={(e) => set('password', e.target.value)}
-                    className={`${inputClass(errors.password)} w-full pr-11`}
+                    value={password}
+                    onChange={(e) => {
+                      setPassword(e.target.value);
+                      setErrors((p) => ({ ...p, password: undefined }));
+                    }}
+                    className={`${inputCls(errors.password)} w-full pr-11`}
                     autoComplete="new-password"
                     disabled={loading}
                   />
@@ -479,9 +438,12 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
                   <input
                     type={showConfirm ? 'text' : 'password'}
                     placeholder="Repita a senha"
-                    value={form.confirmPassword}
-                    onChange={(e) => set('confirmPassword', e.target.value)}
-                    className={`${inputClass(errors.confirmPassword)} w-full pr-11`}
+                    value={confirmPassword}
+                    onChange={(e) => {
+                      setConfirmPassword(e.target.value);
+                      setErrors((p) => ({ ...p, confirmPassword: undefined }));
+                    }}
+                    className={`${inputCls(errors.confirmPassword)} w-full pr-11`}
                     autoComplete="new-password"
                     disabled={loading}
                   />
@@ -496,10 +458,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
                 </div>
               </Field>
 
-              {/* Indicador de força da senha */}
-              {form.password.length > 0 && (
-                <PasswordStrength password={form.password} />
-              )}
+              {password.length > 0 && <PasswordStrength password={password} />}
 
               <div className="flex gap-3 pt-1">
                 <button
@@ -533,7 +492,6 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
             </form>
           )}
 
-          {/* Link de volta ao login */}
           <p className="text-center text-[11px] text-slate-400">
             Já tem uma conta?{' '}
             <button
@@ -546,39 +504,6 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
           </p>
         </div>
       </div>
-    </div>
-  );
-};
-
-// ── Indicador de força de senha ───────────────────────────────────────────────
-
-const PasswordStrength: React.FC<{ password: string }> = ({ password }) => {
-  const checks = [
-    password.length >= 8,
-    /[A-Z]/.test(password),
-    /[0-9]/.test(password),
-    /[^A-Za-z0-9]/.test(password),
-  ];
-  const strength = checks.filter(Boolean).length;
-
-  const colors = ['bg-red-400', 'bg-orange-400', 'bg-yellow-400', 'bg-emerald-400'];
-  const labels = ['Muito fraca', 'Fraca', 'Razoável', 'Forte'];
-
-  return (
-    <div className="space-y-1.5">
-      <div className="flex gap-1">
-        {[0, 1, 2, 3].map((i) => (
-          <div
-            key={i}
-            className={`h-1 flex-1 rounded-full transition-all ${
-              i < strength ? colors[strength - 1] : 'bg-slate-200 dark:bg-slate-700'
-            }`}
-          />
-        ))}
-      </div>
-      <p className={`text-[10px] font-medium ${strength >= 3 ? 'text-emerald-500' : 'text-slate-400'}`}>
-        {labels[strength - 1] ?? 'Digite uma senha'}
-      </p>
     </div>
   );
 };

@@ -146,13 +146,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return { success: true };
     } catch (err: any) {
       console.error('[AuthContext] Falha no login:', err);
-      const status = err?.response?.status;
+      const status  = err?.response?.status;
+      const backendMsg: string = err?.response?.data?.message ?? '';
+
+      if (backendMsg.toLowerCase().includes('disabled')) {
+        return {
+          success: false,
+          message: 'Esta conta está desativada. Peça ao administrador para ativá-la.',
+        };
+      }
 
       if (status === 401 || status === 404) {
         return {
           success: false,
           message: 'E-mail ou senha incorretos.',
         };
+      }
+
+      if (backendMsg) {
+        return { success: false, message: backendMsg };
       }
 
       return {

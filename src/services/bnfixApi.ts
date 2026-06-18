@@ -23,38 +23,41 @@ const bnfixApi = axios.create({
   timeout: 15_000,
 });
 
-// ── Request interceptor: injeta Bearer token e cookie jwt ────────────────────
-// O backend Quarkus autentica via cookie 'jwt'. O proxy do Vite repassa
-// o Set-Cookie do backend, mas como o domínio original é api.bnfix.com.br
-// o browser não o envia automaticamente. Por isso injetamos o token salvo
-// tanto via Authorization header quanto via Cookie header manualmente.
+// ── Request interceptor ───────────────────────────────────────────────────────
+// Remove o header Cookie — browsers bloqueiam esse header manualmente
+// (erro "Foi negada a tentativa de definir um cabeçalho proibido: Cookie").
+// O backend Quarkus aceita autenticação via Authorization: Bearer <token>.
 
 bnfixApi.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   const token = localStorage.getItem(TOKEN_KEY);
   if (token && config.headers) {
     config.headers['Authorization'] = `Bearer ${token}`;
-    // Injeta também como cookie para compatibilidade com o backend Quarkus
-    config.headers['Cookie'] = `jwt=${token}`;
+    // NÃO setar config.headers['Cookie'] — header proibido em browsers
   }
+  console.log(`[bnfixApi →] ${config.method?.toUpperCase()} ${config.baseURL}${config.url}`, {
+    hasToken: !!token,
+    body: config.data ? (() => { try { return JSON.parse(config.data); } catch { return config.data; } })() : undefined,
+  });
   return config;
 });
 
 // ── Response interceptor: tratamento centralizado de erros ───────────────────
 
 bnfixApi.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    console.log(`[bnfixApi ←] ${response.status} ${response.config.url}`);
+    return response;
+  },
   (error: AxiosError) => {
     if (error.response) {
       const { status } = error.response;
-
-      if (status === 401) {
-        // A sessão é controlada pelo AuthContext. Não logamos 401 aqui para
-        // evitar ruído quando a aplicação faz chamadas opcionais.
-      }
+      console.error(`[bnfixApi ←] ERRO ${status} ${error.config?.url}`, error.response.data);
 
       if (status === 403) {
         console.warn('[BNFix API] Acesso negado — role insuficiente para este recurso.');
       }
+    } else {
+      console.error('[bnfixApi] Sem resposta do servidor:', error.message);
     }
 
     return Promise.reject(error);

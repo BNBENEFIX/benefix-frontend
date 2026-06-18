@@ -22,7 +22,20 @@ export const onboardingService = {
    * Retorna a resposta bruta do backend.
    */
   register: async (payload: OnboardingPayload): Promise<OnboardingResponse> => {
-    const { data } = await bnfixApi.post<OnboardingResponse>('/onboarding', payload);
-    return data;
+    console.group('[Onboarding] Iniciando cadastro');
+    console.log('[Onboarding] Payload enviado:', JSON.stringify(payload, null, 2));
+    try {
+      const response = await bnfixApi.post<OnboardingResponse>('/onboarding', payload);
+      console.log('[Onboarding] Status HTTP:', response.status);
+      console.log('[Onboarding] Resposta do backend:', JSON.stringify(response.data, null, 2));
+      console.groupEnd();
+      return response.data;
+    } catch (err: any) {
+      console.error('[Onboarding] FALHOU');
+      console.error('[Onboarding] Status HTTP:', err?.response?.status);
+      console.error('[Onboarding] Body do erro:', JSON.stringify(err?.response?.data, null, 2));
+      console.groupEnd();
+      throw err;
+    }
   },
 };

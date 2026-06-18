@@ -1,20 +1,11 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
-import { Sun, Moon, LogOut, Sparkles, UserCheck, ShieldCheck, ShoppingBag, Trophy } from 'lucide-react';
-import { UserRole } from '../types';
+import { Sun, Moon, LogOut, Trophy } from 'lucide-react';
 
 export const Navbar: React.FC = () => {
-  const { user, switchProfile, logout } = useAuth();
+  const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
-  const [showRoleSwitcher, setShowRoleSwitcher] = useState(false);
-
-  const roles: { role: UserRole; label: string; desc: string; color: string }[] = [
-    { role: 'EMPLOYEE', label: 'Funcionário', desc: 'Solicitar, favoritar, visualizar cupons e pontuação', color: 'bg-emerald-500' },
-    { role: 'COMPANY', label: 'Gestor RH (Empresa)', desc: 'Contratar benefícios, aprovar/rejeitar solicitações, comunicados', color: 'bg-blue-500' },
-    { role: 'SUPPLIER', label: 'Fornecedor', desc: 'Cadastrar benefícios, gerenciar cupons e vouchers', color: 'bg-indigo-500' },
-    { role: 'ADMIN', label: 'Admin Global', desc: 'Aprovar empresas, gerenciar categorias e métricas', color: 'bg-amber-500' },
-  ];
 
   const getRoleColor = (role: string) => {
     switch (role) {
@@ -29,8 +20,8 @@ export const Navbar: React.FC = () => {
     switch (role) {
       case 'ADMIN': return 'ADMIN PLATAFORMA';
       case 'SUPPLIER': return 'FORNECEDOR';
-      case 'COMPANY': return 'GESTOR RH (Acme)';
-      default: return 'COLABORADOR (Acme)';
+      case 'COMPANY': return 'GESTOR RH';
+      default: return 'COLABORADOR';
     }
   };
 
@@ -40,59 +31,19 @@ export const Navbar: React.FC = () => {
         
         {/* Brand Logo */}
         <a href="/" className="flex items-center gap-2 group">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-600 flex items-center justify-center shadow-md shadow-emerald-500/10 group-hover:scale-105 transition-transform">
-            <Sparkles className="w-5 h-5 text-white" />
-          </div>
+          <img
+            src="/favicon.png"
+            alt="BNFix"
+            className="w-11 h-11 rounded-xl object-contain group-hover:scale-105 transition-transform"
+          />
           <div className="flex flex-col">
-            <span className="font-display font-bold text-lg text-slate-800 dark:text-neutral-50 tracking-tight leading-none">BeneficiSaaS</span>
-            <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">Inteligência Analítica</span>
+            <span className="font-display font-bold text-lg text-slate-800 dark:text-neutral-50 tracking-tight leading-none">BNFix</span>
+            <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">Benefícios Corporativos</span>
           </div>
         </a>
 
         {/* Desktop Controls */}
         <div className="flex items-center gap-4">
-          
-          {/* Quick Sandbox Role Switcher */}
-          <div className="relative">
-            <button
-              onClick={() => setShowRoleSwitcher(!showRoleSwitcher)}
-              className="flex items-center gap-2 text-xs font-semibold px-3 py-1.5 rounded-lg border border-emerald-500/50 dark:border-emerald-500/20 text-emerald-600 dark:text-emerald-400 bg-emerald-50/50 dark:bg-emerald-950/20 hover:bg-emerald-100/60 dark:hover:bg-emerald-950/40 transition-colors shadow-sm animate-pulse cursor-pointer"
-            >
-              <UserCheck className="w-3.5 h-3.5" />
-              <span>Simular Perfil SaaS: <strong className="underline">{user?.role}</strong></span>
-            </button>
-            
-            {showRoleSwitcher && (
-              <div className="absolute right-0 mt-2 w-72 md:w-80 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xl p-2.5 z-50">
-                <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider px-3 py-1.5 border-b border-slate-100 dark:border-slate-800">
-                  Visualizar as 4 perspectivas da plataforma
-                </div>
-                <div className="space-y-1.5 mt-2">
-                  {roles.map((r) => (
-                    <button
-                      key={r.role}
-                      onClick={() => {
-                        switchProfile(r.role);
-                        setShowRoleSwitcher(false);
-                      }}
-                      className={`w-full text-left p-2 rounded-lg text-xs transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/60 flex gap-2.5 items-start cursor-pointer ${
-                        user?.role === r.role ? 'bg-slate-100/80 dark:bg-slate-800/80 border border-slate-200/50 dark:border-slate-700/50' : 'border border-transparent'
-                      }`}
-                    >
-                      <span className={`w-2.5 h-2.5 rounded-full mt-1 shrink-0 ${r.color}`} />
-                      <div>
-                        <div className="font-semibold text-slate-800 dark:text-slate-200 flex items-center justify-between">
-                          <span>{r.label}</span>
-                          {user?.role === r.role && <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold">Simulando</span>}
-                        </div>
-                        <div className="text-[10px] text-slate-400 dark:text-slate-500 leading-tight mt-0.5">{r.desc}</div>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
 
           {/* Theme Toggler */}
           <button
