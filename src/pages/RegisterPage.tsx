@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import {
   Sparkles,
   UserPlus,
@@ -22,40 +22,105 @@ interface RegisterPageProps {
   onRegisterSuccess: () => void;
 }
 
-// ── Helpers de validação ─────────────────────────────────────────────────────
+// ── Helpers de máscara ────────────────────────────────────────────────────────
+// Recebem APENAS dígitos e retornam a string formatada para exibição.
 
 const cleanDigits = (value: string) => value.replace(/\D/g, '');
 
-const formatCnpj = (value: string) => {
-  const d = cleanDigits(value).slice(0, 14);
-  return d
-    .replace(/^(\d{2})(\d)/, '$1.$2')
-    .replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3')
-    .replace(/\.(\d{3})(\d)/, '.$1/$2')
-    .replace(/(\d{4})(\d)/, '$1-$2');
+const applyMaskCnpj = (digits: string): string => {
+  const d = digits.slice(0, 14);
+  if (d.length <= 2)  return d;
+  if (d.length <= 5)  return `${d.slice(0,2)}.${d.slice(2)}`;
+  if (d.length <= 8)  return `${d.slice(0,2)}.${d.slice(2,5)}.${d.slice(5)}`;
+  if (d.length <= 12) return `${d.slice(0,2)}.${d.slice(2,5)}.${d.slice(5,8)}/${d.slice(8)}`;
+  return `${d.slice(0,2)}.${d.slice(2,5)}.${d.slice(5,8)}/${d.slice(8,12)}-${d.slice(12)}`;
 };
 
-const formatCpf = (value: string) => {
-  const d = cleanDigits(value).slice(0, 11);
-  return d
-    .replace(/(\d{3})(\d)/, '$1.$2')
-    .replace(/(\d{3})\.(\d{3})(\d)/, '$1.$2.$3')
-    .replace(/(\d{3})\.(\d{3})\.(\d{3})(\d)/, '$1.$2.$3-$4');
+const applyMaskCpf = (digits: string): string => {
+  const d = digits.slice(0, 11);
+  if (d.length <= 3)  return d;
+  if (d.length <= 6)  return `${d.slice(0,3)}.${d.slice(3)}`;
+  if (d.length <= 9)  return `${d.slice(0,3)}.${d.slice(3,6)}.${d.slice(6)}`;
+  return `${d.slice(0,3)}.${d.slice(3,6)}.${d.slice(6,9)}-${d.slice(9)}`;
 };
 
-const isValidCnpj = (cnpj: string) => cleanDigits(cnpj).length === 14;
-const isValidCpf  = (cpf: string)  => cleanDigits(cpf).length === 11;
-const isValidEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+// ── Validação ─────────────────────────────────────────────────────────────────
+
+const isValidCnpj  = (digits: string) => digits.length === 14;
+const isValidCpf   = (digits: string) => digits.length === 11;
+const isValidEmail = (email: string)  => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
+// ── Hook para input com máscara sem salto de cursor ───────────────────────────
+// Armazena os dígitos brutos no estado e usa uma ref para restaurar a posição
+// correta do cursor após a re-renderização do React.
+
+function useMaskedInput(
+  applyMask: (digits: string) => string,
+  maxDigits: number,
+) {
+  const [digits, setDigits] = useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
+  // Guarda a posição desejada do cursor para restaurar depois do render
+  const cursorPos = useRef<number | null>(null);
+
+  // Após cada render, restaura a posição do cursor se há uma pendente
+  const syncCursor = useCallback(() => {
+    if (cursorPos.current !== null && inputRef.current) {
+      inputRef.current.setSelectionRange(cursorPos.current, cursorPos.current);
+      cursorPos.current = null;
+    }
+  }, []);
+
+  const handleChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const el = e.currentTarget;
+      const selEnd = el.selectionEnd ?? el.value.length;
+
+      // Conta quantos dígitos existem antes do cursor na string formatada atual
+      const charsBeforeCursor = el.value.slice(0, selEnd);
+      const digitsBeforeCursor = charsBeforeCursor.replace(/\D/g, '').length;
+
+      // Novos dígitos brutos
+      const newDigits = cleanDigits(el.value).slice(0, maxDigits);
+      setDigits(newDigits);
+
+      // Calcula onde o cursor deve ficar na nova string formatada:
+      // avança pela string formatada contando dígitos até bater o alvo
+      const newFormatted = applyMask(newDigits);
+      let count = 0;
+      let newPos = newFormatted.length;
+      for (let i = 0; i < newFormatted.length; i++) {
+        if (/\d/.test(newFormatted[i])) {
+          count++;
+          if (count === digitsBeforeCursor) {
+            newPos = i + 1;
+            break;
+          }
+        }
+      }
+
+      cursorPos.current = newPos;
+    },
+    [applyMask, maxDigits],
+  );
+
+  return {
+    digits,
+    inputRef,
+    displayValue: applyMask(digits),
+    handleChange,
+    syncCursor,
+    reset: () => setDigits(''),
+  };
+}
 
 // ── Tipos de estado do formulário ────────────────────────────────────────────
 
 interface FormState {
   // Empresa
   companyName: string;
-  cnpj: string;
   // Manager (responsável RH)
   managerName: string;
-  cpf: string;
   email: string;
   password: string;
   confirmPassword: string;
@@ -80,19 +145,21 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
   const [step, setStep] = useState<1 | 2>(1);
   const [form, setForm] = useState<FormState>({
     companyName:     '',
-    cnpj:            '',
     managerName:     '',
-    cpf:             '',
     email:           '',
     password:        '',
     confirmPassword: '',
   });
-  const [errors, setErrors]         = useState<FormErrors>({});
-  const [showPwd, setShowPwd]       = useState(false);
+  const [errors, setErrors]           = useState<FormErrors>({});
+  const [showPwd, setShowPwd]         = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
-  const [loading, setLoading]       = useState(false);
-  const [apiError, setApiError]     = useState('');
-  const [success, setSuccess]       = useState(false);
+  const [loading, setLoading]         = useState(false);
+  const [apiError, setApiError]       = useState('');
+  const [success, setSuccess]         = useState(false);
+
+  // Campos com máscara (gerenciados separadamente para evitar salto de cursor)
+  const cnpj = useMaskedInput(applyMaskCnpj, 14);
+  const cpf  = useMaskedInput(applyMaskCpf, 11);
 
   // ── Atualização genérica de campos ────────────────────────────────────────
 
@@ -102,24 +169,29 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
     setApiError('');
   };
 
+  const clearFieldError = (field: keyof FormErrors) => {
+    setErrors((prev) => ({ ...prev, [field]: undefined }));
+    setApiError('');
+  };
+
   // ── Validação por etapa ───────────────────────────────────────────────────
 
   const validateStep1 = (): boolean => {
     const e: FormErrors = {};
-    if (!form.companyName.trim())       e.companyName = 'Informe o nome da empresa.';
-    if (!isValidCnpj(form.cnpj))        e.cnpj = 'CNPJ inválido — informe os 14 dígitos.';
+    if (!form.companyName.trim())    e.companyName = 'Informe o nome da empresa.';
+    if (!isValidCnpj(cnpj.digits))   e.cnpj = 'CNPJ inválido — informe os 14 dígitos.';
     setErrors(e);
     return Object.keys(e).length === 0;
   };
 
   const validateStep2 = (): boolean => {
     const e: FormErrors = {};
-    if (!form.managerName.trim())           e.managerName = 'Informe o nome completo.';
-    if (!isValidCpf(form.cpf))              e.cpf = 'CPF inválido — informe os 11 dígitos.';
-    if (!isValidEmail(form.email))          e.email = 'E-mail inválido.';
-    if (form.password.length < 8)           e.password = 'A senha deve ter pelo menos 8 caracteres.';
+    if (!form.managerName.trim())            e.managerName = 'Informe o nome completo.';
+    if (!isValidCpf(cpf.digits))             e.cpf = 'CPF inválido — informe os 11 dígitos.';
+    if (!isValidEmail(form.email))           e.email = 'E-mail inválido.';
+    if (form.password.length < 8)            e.password = 'A senha deve ter pelo menos 8 caracteres.';
     if (form.password !== form.confirmPassword)
-                                            e.confirmPassword = 'As senhas não coincidem.';
+                                             e.confirmPassword = 'As senhas não coincidem.';
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -143,18 +215,17 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
       await onboardingService.register({
         company: {
           name: form.companyName.trim(),
-          cnpj: cleanDigits(form.cnpj),
+          cnpj: cnpj.digits,
         },
         manager: {
           name:     form.managerName.trim(),
-          cpf:      cleanDigits(form.cpf),
+          cpf:      cpf.digits,
           email:    form.email.trim().toLowerCase(),
           password: form.password,
         },
       });
 
       setSuccess(true);
-      // Redireciona para o login após 3 segundos
       setTimeout(() => onRegisterSuccess(), 3000);
     } catch (err: any) {
       const status = err?.response?.status;
@@ -316,11 +387,13 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
 
               <Field label="CNPJ" icon={CreditCard} error={errors.cnpj}>
                 <input
+                  ref={cnpj.inputRef}
                   type="text"
                   inputMode="numeric"
                   placeholder="00.000.000/0000-00"
-                  value={form.cnpj}
-                  onChange={(e) => set('cnpj', formatCnpj(e.target.value))}
+                  value={cnpj.displayValue}
+                  onChange={(e) => { cnpj.handleChange(e); clearFieldError('cnpj'); }}
+                  onKeyUp={cnpj.syncCursor}
                   className={inputClass(errors.cnpj)}
                   maxLength={18}
                 />
@@ -354,11 +427,13 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
 
               <Field label="CPF" icon={CreditCard} error={errors.cpf}>
                 <input
+                  ref={cpf.inputRef}
                   type="text"
                   inputMode="numeric"
                   placeholder="000.000.000-00"
-                  value={form.cpf}
-                  onChange={(e) => set('cpf', formatCpf(e.target.value))}
+                  value={cpf.displayValue}
+                  onChange={(e) => { cpf.handleChange(e); clearFieldError('cpf'); }}
+                  onKeyUp={cpf.syncCursor}
                   className={inputClass(errors.cpf)}
                   maxLength={14}
                   disabled={loading}
