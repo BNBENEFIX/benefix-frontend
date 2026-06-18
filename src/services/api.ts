@@ -10,7 +10,7 @@
  *    → usa o proxy Express local (/api/*) temporariamente até o backend evoluir
  */
 import axios from 'axios';
-import bnfixApi from './bnfixApi';
+import bnfixApi, { USER_KEY } from './bnfixApi';
 import { benefitService as realBenefitService } from './benefitService';
 import { subscriptionService } from './subscriptionService';
 import type {
@@ -26,6 +26,17 @@ import type {
   User,
 } from '../types';
 
+const getStoredUserRole = (): User['role'] | null => {
+  try {
+    const rawUser = localStorage.getItem(USER_KEY);
+    if (!rawUser) return null;
+    const parsed = JSON.parse(rawUser) as Partial<User>;
+    return parsed.role ?? null;
+  } catch {
+    return null;
+  }
+};
+
 // ── Cliente para o servidor Express local (funcionalidades extras) ────────────
 
 const localApi = axios.create({
@@ -38,7 +49,26 @@ const localApi = axios.create({
 
 export const benefitService = {
   getBenefits: async (): Promise<Benefit[]> => {
-    return realBenefitService.getTenantBenefits();
+    const role = getStoredUserRole();
+
+    const preferred = role === 'COMPANY'
+      ? realBenefitService.getTenantBenefits()
+      : realBenefitService.getMarketplace();
+    const fallback = role === 'COMPANY'
+      ? realBenefitService.getMarketplace()
+      : realBenefitService.getTenantBenefits();
+
+    try {
+      return await preferred;
+    } catch (err) {
+      console.warn('[benefitService] Consulta principal do catálogo falhou, tentando fallback.', err);
+      try {
+        return await fallback;
+      } catch (fallbackErr) {
+        console.warn('[benefitService] Fallback do catálogo também falhou.', fallbackErr);
+        return [];
+      }
+    }
   },
 
   createBenefit: async (payload: Partial<Benefit>): Promise<Benefit> => {

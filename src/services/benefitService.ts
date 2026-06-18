@@ -21,6 +21,7 @@ import type {
 
 interface BackendTenantBenefit {
   id: number;
+  benefitId?: number;
   benefitName: string;
   nameProvider?: string;
   categoryId?: number;
@@ -65,8 +66,8 @@ const mapBenefit = (b: BackendBenefit): Benefit => ({
 });
 
 const mapTenantBenefit = (b: BackendTenantBenefit): Benefit => ({
-  id:           String(b.id),
-  backendId:    b.id,
+  id:           String(b.benefitId ?? b.id),
+  backendId:    b.benefitId ?? b.id,
   name:         b.benefitName,
   description:  b.nameProvider ?? 'Benefício do tenant',
   category:     resolveCategoryName(b.categoryId),
@@ -119,16 +120,12 @@ export const benefitService = {
   },
 
   /** Ativa um benefício desativado */
-  activate: async (id: number): Promise<Benefit> => {
-    const { data } = await bnfixApi.put(`/benefits/${id}/activate`, {});
-    if (data && data.benefitName) return mapTenantBenefit(data as any);
-    return mapBenefit(data as BackendBenefit);
+  activate: async (id: number): Promise<void> => {
+    await bnfixApi.put(`/benefits/${id}/activate`);
   },
 
   /** Desativa um benefício */
-  deactivate: async (id: number): Promise<Benefit> => {
-    const { data } = await bnfixApi.put(`/benefits/${id}/deactivate`, {});
-    if (data && data.benefitName) return mapTenantBenefit(data as any);
-    return mapBenefit(data as BackendBenefit);
+  deactivate: async (id: number): Promise<void> => {
+    await bnfixApi.put(`/benefits/${id}/deactivate`);
   },
 };

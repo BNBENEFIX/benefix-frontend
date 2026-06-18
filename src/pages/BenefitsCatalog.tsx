@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { recommendationService } from '../services/api';
+import { benefitService as catalogBenefitService, recommendationService } from '../services/api';
 import { benefitService as realBenefitService } from '../services/benefitService';
 import { partnershipService } from '../services/partnershipService';
 import { companyService } from '../services/companyService';
@@ -100,39 +100,23 @@ export const BenefitsCatalog: React.FC = () => {
   const loadCatalog = useCallback(async () => {
     setLoading(true);
     try {
-      if (isManager) {
-        // Gestor vê os benefícios do próprio tenant
-        const [tenantBenefits, company] = await Promise.allSettled([
-          realBenefitService.getTenantBenefits(),
-          companyService.getMyCompany(),
-        ]);
-        if (tenantBenefits.status === 'fulfilled') {
-          setBenefits(tenantBenefits.value);
-        } else {
-          console.warn('[BenefitsCatalog] GET /benefits/tenant falhou:', (tenantBenefits.reason as any)?.response?.data);
-          // Não sobrescreve lista local — benefícios criados nesta sessão permanecem
-        }
-        if (company.status === 'fulfilled' && company.value?.id)
-          setCompanyId(company.value.id);
+      const [catalogBenefits, company, recommended] = await Promise.allSettled([
+        catalogBenefitService.getBenefits(),
+        isManager ? companyService.getMyCompany() : Promise.resolve(null),
+        isManager ? Promise.resolve([] as Benefit[]) : recommendationService.getRecommendations(),
+      ]);
+
+      if (catalogBenefits.status === 'fulfilled') {
+        setBenefits(catalogBenefits.value);
       } else {
-        // Colaboradores veem benefícios do tenant (mesma empresa)
-        // NOTA: /benefits/tenant e /marketplace são restritos a MANAGER no backend.
-        // Para USER, tentamos /benefits/tenant; se falhar com 403, lista fica vazia.
-        const [tenantBenefits, recommended] = await Promise.allSettled([
-          realBenefitService.getTenantBenefits(),
-          recommendationService.getRecommendations(),
-        ]);
-        if (tenantBenefits.status === 'fulfilled') {
-          setBenefits(tenantBenefits.value);
-        } else {
-          const status = (tenantBenefits.reason as any)?.response?.status;
-          if (status === 403) {
-            console.warn('[BenefitsCatalog] Acesso negado para USER. Benefícios indisponíveis neste perfil.');
-          } else {
-            console.warn('[BenefitsCatalog] GET /benefits/tenant falhou:', (tenantBenefits.reason as any)?.response?.data);
-          }
-        }
-        if (recommended.status === 'fulfilled') setRecommendations(recommended.value);
+        console.warn('[BenefitsCatalog] Falha ao carregar catálogo:', (catalogBenefits.reason as any)?.response?.data ?? catalogBenefits.reason);
+      }
+
+      if (company.status === 'fulfilled' && company.value?.id)
+        setCompanyId(company.value.id);
+
+      if (!isManager && recommended.status === 'fulfilled') {
+        setRecommendations(recommended.value);
       }
     } catch (err) {
       console.error('[BenefitsCatalog] loadCatalog:', err);
@@ -181,7 +165,7 @@ export const BenefitsCatalog: React.FC = () => {
 
   const handleActivate = async (b: Benefit) => {
     try {
-      const updated = await realBenefitService.activate(b.backendId ?? Number(b.id));
+      await realBenefitService.activate(b.backendId ?? Number(b.id));
       setBenefits(prev => prev.map(x => x.id === b.id ? { ...x, active: true, status: 'Ativo' } : x));
       showToast(`"${b.name}" ativado com sucesso.`);
     } catch {
