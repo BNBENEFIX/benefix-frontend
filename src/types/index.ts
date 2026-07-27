@@ -38,11 +38,19 @@ export interface BackendUser {
 
 export interface BackendBenefit {
   id: number;
-  name: string;
+  name?: string;
+  benefitName?: string;
   description: string;
-  companyId: number;
+  companyId?: number;
   companyName?: string;
+  nameProvider?: string;
   active?: boolean;
+  status?: boolean;
+  publiclyVisible?: boolean;
+  validUntil?: string;
+  maxUsesPerUser?: number;
+  terms?: string;
+  categories?: Array<{ id: number; name: string }>;
 }
 
 export interface BackendEmployee {
@@ -253,12 +261,20 @@ export interface CreateBenefitPayload {
   name: string;
   description: string;
   companyId: number;
-  categoryId?: number;
+  categoryIds?: number[];
+  publiclyVisible?: boolean;
+  validUntil?: string;
+  maxUsesPerUser?: number;
+  terms?: string;
 }
 
 export interface UpdateBenefitPayload {
   name?: string;
   description?: string;
+  publiclyVisible?: boolean;
+  validUntil?: string;
+  maxUsesPerUser?: number;
+  terms?: string;
 }
 
 export interface CreateEmployeePayload {
@@ -292,4 +308,53 @@ export interface CreatePartnershipPayload {
 
 export interface CreateSubscriptionPayload {
   benefitId?: number;
+}
+
+export interface SharedBenefit {
+  id: number;
+  subscriptionId?: number;
+  name: string;
+  description: string;
+  providerName: string;
+  categories: Array<{ id: number; name: string }>;
+  validUntil?: string;
+  maxUsesPerUser: number;
+  terms?: string;
+  accessStatus: 'AVAILABLE_TO_REQUEST' | 'PENDING' | 'APPROVED' | 'REJECTED';
+}
+
+export interface SharedBenefitRequest {
+  id: number;
+  benefitId: number;
+  benefitName: string;
+  providerName: string;
+  employeeId: number;
+  employeeName: string;
+  employeeCompanyName: string;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
+  requestedAt: string;
+  reviewedAt?: string;
+  rejectionReason?: string;
+}
+
+export interface RedemptionToken {
+  token: string;
+  redemptionUrl: string;
+  expiresAt: string;
+}
+
+export interface RedemptionPreview {
+  valid: boolean;
+  benefitName: string;
+  beneficiaryName: string;
+  providerName: string;
+  expiresAt: string;
+  message: string;
+}
+
+export interface RedemptionResult {
+  id: number;
+  benefitName: string;
+  beneficiaryName: string;
+  redeemedAt: string;
 }

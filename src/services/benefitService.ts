@@ -50,19 +50,20 @@ const resolveCategoryName = (categoryId?: number): BenefitCategory => {
 const mapBenefit = (b: BackendBenefit): Benefit => ({
   id:           String(b.id),
   backendId:    b.id,
-  name:         b.name ?? (b as any).benefitName ?? 'Sem nome',
+  name:         b.name ?? b.benefitName ?? 'Sem nome',
   description:  b.description ?? (b as any).nameProvider ?? '',
   category:     resolveCategoryName((b as any).categoryId),
   supplierId:   String(b.companyId ?? ''),
-  supplierName: b.companyName ?? (b as any).nameProvider ?? 'Fornecedor',
+  supplierName: b.companyName ?? b.nameProvider ?? 'Fornecedor',
   rating:       0,
   ratingCount:  0,
   imageUrl:     'https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=500',
   details:      b.description ?? '',
-  status:       b.active === false ? 'Suspenso' : 'Ativo',
+  status:       (b.active ?? b.status) === false ? 'Suspenso' : 'Ativo',
   companyId:    b.companyId,
-  active:       b.active,
-  providerName: b.companyName ?? 'Fornecedor',
+  active:       b.active ?? b.status,
+  providerName: b.companyName ?? b.nameProvider ?? 'Fornecedor',
+  rules:        b.terms,
 });
 
 const mapTenantBenefit = (b: BackendTenantBenefit): Benefit => ({

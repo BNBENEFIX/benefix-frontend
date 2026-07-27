@@ -10,23 +10,26 @@ import { RegisterPage } from './screens/RegisterPage';
 import { DashboardAdmin } from './screens/DashboardAdmin';
 import { DashboardSupplier } from './screens/DashboardSupplier';
 import { DashboardRH } from './screens/DashboardRH';
-import { DashboardEmployee } from './screens/DashboardEmployee';
+import { SharedBenefitsHub } from './screens/SharedBenefitsHub';
 import { BenefitsCatalog } from './screens/BenefitsCatalog';
+import { ProviderBenefitsConsole } from './components/ProviderBenefitsConsole';
 import { LayoutDashboard, ShoppingBag, Globe, Loader2 } from 'lucide-react';
 
 // ── Conteúdo principal (autenticado) ─────────────────────────────────────────
 
 const AuthenticatedApp: React.FC = () => {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<'landing' | 'catalog' | 'dashboard'>('landing');
+  const [activeTab, setActiveTab] = useState<'landing' | 'catalog' | 'dashboard'>(
+    user?.role === 'EMPLOYEE' ? 'dashboard' : 'landing',
+  );
 
   const renderDashboard = () => {
     if (!user) return null;
     switch (user.role) {
       case 'ADMIN':    return <DashboardAdmin />;
       case 'SUPPLIER': return <DashboardSupplier />;
-      case 'COMPANY':  return <DashboardRH />;
-      case 'EMPLOYEE': return <DashboardEmployee />;
+      case 'COMPANY':  return <><ProviderBenefitsConsole /><DashboardRH /></>;
+      case 'EMPLOYEE': return <SharedBenefitsHub />;
       default:         return null;
     }
   };

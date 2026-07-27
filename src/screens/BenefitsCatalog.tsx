@@ -42,16 +42,30 @@ const inputCls = (err?: string) =>
 // ── Tipos locais ─────────────────────────────────────────────────────────────
 
 const BENEFIT_CATEGORIES = [
-  { id: 0, label: 'Saúde' },
-  { id: 1, label: 'Educação' },
-  { id: 2, label: 'Alimentação' },
-  { id: 3, label: 'Transporte' },
-  { id: 4, label: 'Lazer' },
-  { id: 5, label: 'Bem-estar' },
+  { id: 1, label: 'Saúde' },
+  { id: 2, label: 'Educação' },
+  { id: 3, label: 'Alimentação' },
+  { id: 4, label: 'Transporte' },
+  { id: 5, label: 'Lazer' },
+  { id: 6, label: 'Bem-estar' },
 ] as const;
 
-interface BenefitForm { name: string; description: string; categoryId: number; }
-const EMPTY_FORM: BenefitForm = { name: '', description: '', categoryId: 0 };
+interface BenefitForm {
+  name: string;
+  description: string;
+  categoryId: number;
+  validUntil: string;
+  maxUsesPerUser: number;
+  terms: string;
+}
+const EMPTY_FORM: BenefitForm = {
+  name: '',
+  description: '',
+  categoryId: 1,
+  validUntil: '',
+  maxUsesPerUser: 1,
+  terms: '',
+};
 interface FormErrors { name?: string; description?: string; categoryId?: string; }
 
 // ── Componente principal ──────────────────────────────────────────────────────
@@ -151,7 +165,11 @@ export const BenefitsCatalog: React.FC = () => {
         name:        form.name.trim(),
         description: form.description.trim(),
         companyId,
-        categoryId:  form.categoryId,
+        categoryIds: [form.categoryId],
+        publiclyVisible: true,
+        validUntil: form.validUntil ? `${form.validUntil}T23:59:59` : undefined,
+        maxUsesPerUser: form.maxUsesPerUser,
+        terms: form.terms.trim() || undefined,
       });
       setBenefits(prev => [created, ...prev]);
       setForm(EMPTY_FORM);
@@ -515,6 +533,26 @@ export const BenefitsCatalog: React.FC = () => {
                     <option key={cat.id} value={cat.id}>{cat.label}</option>
                   ))}
                 </select>
+              </Field>
+
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <Field label="Válido até">
+                  <input type="date" value={form.validUntil}
+                    onChange={e => setForm(f => ({ ...f, validUntil: e.target.value }))}
+                    className={inputCls()} disabled={formLoading} />
+                </Field>
+                <Field label="Utilizações por aluno">
+                  <input type="number" min={1} max={100} value={form.maxUsesPerUser}
+                    onChange={e => setForm(f => ({ ...f, maxUsesPerUser: Math.max(1, Number(e.target.value)) }))}
+                    className={inputCls()} disabled={formLoading} />
+                </Field>
+              </div>
+
+              <Field label="Regras de utilização">
+                <textarea rows={2} placeholder="Ex: válido apenas de segunda a sexta."
+                  value={form.terms}
+                  onChange={e => setForm(f => ({ ...f, terms: e.target.value }))}
+                  className={`${inputCls()} resize-none`} disabled={formLoading} />
               </Field>
 
               <div className="flex justify-end gap-2 pt-1">
