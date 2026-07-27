@@ -617,7 +617,7 @@ export const DashboardAdmin: React.FC = () => {
                         {resp.benefitRating ? (
                           <div className="flex text-amber-500 justify-center">
                             {[1, 2, 3, 4, 5].map((st) => (
-                              <Star key={st} className={`w-3.5 h-3.5 ${st <= resp.benefitRating ? 'fill-amber-450 text-amber-400' : 'text-slate-300 dark:text-slate-800'}`} />
+                              <Star key={st} className={`w-3.5 h-3.5 ${st <= (resp.benefitRating ?? 0) ? 'fill-amber-450 text-amber-400' : 'text-slate-300 dark:text-slate-800'}`} />
                             ))}
                           </div>
                         ) : (

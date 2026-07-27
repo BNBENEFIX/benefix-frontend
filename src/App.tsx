@@ -4,14 +4,14 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
 import { ChatbotWidget } from './components/ChatbotWidget';
-import { LandingPage } from './pages/LandingPage';
-import { LoginPage } from './pages/LoginPage';
-import { RegisterPage } from './pages/RegisterPage';
-import { DashboardAdmin } from './pages/DashboardAdmin';
-import { DashboardSupplier } from './pages/DashboardSupplier';
-import { DashboardRH } from './pages/DashboardRH';
-import { DashboardEmployee } from './pages/DashboardEmployee';
-import { BenefitsCatalog } from './pages/BenefitsCatalog';
+import { LandingPage } from './screens/LandingPage';
+import { LoginPage } from './screens/LoginPage';
+import { RegisterPage } from './screens/RegisterPage';
+import { DashboardAdmin } from './screens/DashboardAdmin';
+import { DashboardSupplier } from './screens/DashboardSupplier';
+import { DashboardRH } from './screens/DashboardRH';
+import { DashboardEmployee } from './screens/DashboardEmployee';
+import { BenefitsCatalog } from './screens/BenefitsCatalog';
 import { LayoutDashboard, ShoppingBag, Globe, Loader2 } from 'lucide-react';
 
 // ── Conteúdo principal (autenticado) ─────────────────────────────────────────
@@ -85,10 +85,10 @@ const AuthenticatedApp: React.FC = () => {
 
 type AuthScreen = 'login' | 'register';
 
-const AppContent: React.FC = () => {
+const AppContent: React.FC<{ initialAuthScreen?: AuthScreen }> = ({ initialAuthScreen = 'login' }) => {
   const { user, loading } = useAuth();
   const [loggedIn, setLoggedIn]     = useState(false);
-  const [authScreen, setAuthScreen] = useState<AuthScreen>('login');
+  const [authScreen, setAuthScreen] = useState<AuthScreen>(initialAuthScreen);
 
   // Spinner global enquanto carrega sessão
   if (loading) {
@@ -130,11 +130,11 @@ const AppContent: React.FC = () => {
 
 // ── Root ─────────────────────────────────────────────────────────────────────
 
-export default function App() {
+export default function App({ initialAuthScreen = 'login' }: { initialAuthScreen?: AuthScreen }) {
   return (
     <ThemeProvider>
       <AuthProvider>
-        <AppContent />
+        <AppContent initialAuthScreen={initialAuthScreen} />
       </AuthProvider>
     </ThemeProvider>
   );

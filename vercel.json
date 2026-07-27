@@ -1,8 +1,3 @@
 {
-  "rewrites": [
-    {
-      "source": "/api/bnfix/:path*",
-      "destination": "https://api.bnfix.com.br/"
-    }
-  ]
+  "framework": "nextjs"
 }

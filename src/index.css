@@ -1,200 +1,145 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
-  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
-  --font-display: "Outfit", "Inter", sans-serif;
-  --font-mono: "JetBrains Mono", monospace;
+  --font-sans: "Avenir Next", Avenir, "Segoe UI", ui-sans-serif, system-ui, sans-serif;
+  --font-display: Georgia, "Times New Roman", serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
 
-  /* Premium SaaS Color Palette - Elegant Dark Accent Map */
-  --color-brand-50: #1e1b4b; /* Indigo 950 */
-  --color-brand-100: #312e81; /* Indigo 900 */
-  --color-brand-500: #6366f1; /* Indigo 500 */
-  --color-brand-600: #4f46e5; /* Indigo 600 */
-  --color-brand-700: #4338ca; /* Indigo 700 */
-
-  --color-accent-50: #1e1b4b;
-  --color-accent-500: #6366f1;
-  --color-accent-600: #4f46e5;
-
-  --color-primary-base: #fafafa;
-  --color-secondary-base: #a1a1aa;
-  
-  --color-dark-bg: #09090b;     /* Zinc 950 */
-  --color-dark-card: #181c24;   /* Zinc 903/905 */
-  --color-dark-border: #222227; /* Zinc 800 */
-  --color-dark-accent: #6366f1; /* Indigo */
+  --color-brand-50: #f1f7f3;
+  --color-brand-100: #ddeee5;
+  --color-brand-500: #2f7a5c;
+  --color-brand-600: #23664e;
+  --color-brand-700: #194b3a;
+  --color-accent-50: #f1f7f3;
+  --color-accent-500: #2f7a5c;
+  --color-accent-600: #23664e;
 }
 
-/* Custom CSS variables for standard Tailwind CSS support */
 :root {
-  --bg-app: #09090b; /* zinc-950 */
-  --bg-card: #141416; /* zinc-900 */
-  --text-main: #f4f4f5; /* zinc-100 */
-  --text-sub: #a1a1aa; /* zinc-405 */
-  --border-app: #222227; /* zinc-800 */
-  --glow-shadow: 0 4px 20px -2px rgba(99, 102, 241, 0.15);
-  --glass-bg: rgba(20, 20, 22, 0.75);
+  color-scheme: light;
+  --canvas: #f6f5f1;
+  --surface: #ffffff;
+  --surface-muted: #efeee9;
+  --ink: #17201c;
+  --muted: #66716b;
+  --line: #d9ddd8;
+  --brand: #194b3a;
+  --brand-strong: #12372a;
+  --brand-soft: #f1f7f3;
+  --bg-app: var(--canvas);
+  --bg-card: var(--surface);
+  --text-main: var(--ink);
+  --text-sub: var(--muted);
+  --border-app: var(--line);
 }
 
 .dark {
-  --bg-app: #09090b; /* zinc-950 */
-  --bg-card: #141416; /* zinc-900 */
-  --text-main: #f4f4f5; /* zinc-100 */
-  --text-sub: #a1a1aa; /* zinc-405 */
-  --border-app: #222227; /* zinc-800 */
-  --glow-shadow: 0 4px 20px -2px rgba(99, 102, 241, 0.25);
-  --glass-bg: rgba(20, 20, 22, 0.85);
+  color-scheme: dark;
+  --canvas: #111713;
+  --surface: #18201b;
+  --surface-muted: #202a24;
+  --ink: #eef3ef;
+  --muted: #a8b2ac;
+  --line: #344039;
+  --brand: #75b695;
+  --brand-strong: #a2cfb7;
+  --brand-soft: #1c3025;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  background: var(--canvas);
 }
 
 body {
-  background-color: var(--bg-app) !important;
-  color: var(--text-main) !important;
+  min-width: 320px;
+  margin: 0;
+  background: var(--canvas);
+  color: var(--ink);
   font-family: var(--font-sans);
-  transition: background-color 0.3s ease, color 0.3s ease;
-  overflow-x: hidden;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
 }
 
-/* Scrollbar customizations */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+button,
+a,
+input,
+select,
+textarea {
+  transition-duration: 160ms;
+  transition-timing-function: ease-out;
 }
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid #2f7a5c;
+  outline-offset: 2px;
+}
+
+input,
+select,
+textarea {
+  color: var(--ink);
+}
+
+::selection {
+  color: #fff;
+  background: #23664e;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
 ::-webkit-scrollbar-track {
   background: transparent;
 }
+
 ::-webkit-scrollbar-thumb {
-  background: #27272a;
-  border-radius: 4px;
-}
-.dark ::-webkit-scrollbar-thumb {
-  background: #27272a;
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background: #aeb7b1;
+  background-clip: padding-box;
 }
 
-/* Elegant glassmorphism classes */
+.bg-app {
+  background: var(--canvas);
+}
+
 .glass-effect {
-  background: var(--glass-bg);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid var(--border-app);
+  border: 1px solid color-mix(in srgb, var(--line) 80%, transparent);
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  backdrop-filter: blur(16px);
 }
 
-/* Carousel/Infinite logos slider */
-@keyframes slide {
-  0% { transform: translateX(0); }
-  100% { transform: translateX(-50%); }
-}
-.animate-slide {
-  display: flex;
-  width: max-content;
-  animation: slide 25s linear infinite;
-}
-.animate-slide:hover {
-  animation-play-state: paused;
-}
-
-/* Fade in class */
 .fade-in {
-  animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
+  animation: enter 240ms ease-out both;
 }
 
-/* --- ELEGANT DARK COMPONENT OVERRIDES --- */
-
-/* White Background items to Zinc-900 dark bg */
-.bg-white,
-[class*="bg-white"],
-.bg-slate-900,
-.bg-slate-950,
-.bg-neutral-900,
-.bg-zinc-900,
-.bg-zinc-950 {
-  background-color: #141416 !important;
+@keyframes enter {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
 }
 
-/* Light Slate background panels to Zinc-950 body bg */
-.bg-slate-50,
-.bg-slate-50\/50,
-.bg-slate-50\/20,
-.bg-slate-50\/40,
-.bg-zinc-50,
-.bg-neutral-50,
-.bg-slate-100 {
-  background-color: #09090b !important;
-}
-
-/* Borders to elegant dark zinc borders */
-.border-slate-100,
-.border-slate-200,
-.border-slate-300,
-.border-slate-800,
-.border-slate-900,
-.border-neutral-200,
-.border-zinc-200,
-.border-zinc-800 {
-  border-color: #222227 !important;
-}
-
-/* Interactive elements & menus to darker zinc */
-.hover\:bg-slate-50:hover,
-.hover\:bg-slate-100:hover,
-.hover\:bg-slate-200:hover,
-.hover\:bg-zinc-100:hover,
-.hover\:bg-neutral-100:hover {
-  background-color: #1a1a1f !important;
-}
-
-/* Standard Inputs to dark theme-friendly ones (removes light mode glaring input styles) */
-input, select, textarea {
-  background-color: #0c0c0e !important;
-  border-color: #222227 !important;
-  color: #f4f4f5 !important;
-}
-input:focus, select:focus, textarea:focus {
-  border-color: #6366f1 !important;
-  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2) !important;
-}
-
-/* Specific slate-based text colors to high-contrast legible zinc colors */
-.text-slate-900,
-.text-slate-800,
-.text-slate-700,
-.text-neutral-900,
-.text-zinc-900 {
-  color: #f4f4f5 !important; /* Zinc-100 */
-}
-
-.text-slate-500,
-.text-slate-600,
-.text-neutral-500,
-.text-neutral-600,
-.text-zinc-500,
-.text-zinc-650 {
-  color: #a1a1aa !important; /* Zinc-400 */
-}
-
-/* Soft badges */
-.bg-emerald-50, .bg-emerald-500\/10, .bg-emerald-500\/20 {
-  background-color: rgba(99, 102, 241, 0.1) !important;
-}
-
-.text-emerald-500, .text-emerald-600, .text-emerald-400, .text-emerald-700 {
-  color: #818cf8 !important; /* Indigo text fallback */
-}
-
-/* Keep success badges or clear indicators accurate */
-.text-emerald-500.bg-emerald-100 {
-  background-color: rgba(16, 185, 129, 0.1) !important;
-  color: #34d399 !important;
-}
-.text-red-500.bg-red-100 {
-  background-color: rgba(239, 68, 68, 0.1) !important;
-  color: #f87171 !important;
-}
-.text-amber-500.bg-amber-100 {
-  background-color: rgba(245, 158, 11, 0.1) !important;
-  color: #fbbf24 !important;
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

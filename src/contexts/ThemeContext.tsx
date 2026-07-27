@@ -10,11 +10,12 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [theme, setTheme] = useState<Theme>(() => {
+  const [theme, setTheme] = useState<Theme>('light');
+
+  useEffect(() => {
     const saved = localStorage.getItem('theme');
-    if (saved === 'dark' || saved === 'light') return saved;
-    return 'dark'; // Default to dark for Elegant Dark
-  });
+    if (saved === 'dark' || saved === 'light') setTheme(saved);
+  }, []);
 
   useEffect(() => {
     const root = window.document.documentElement;

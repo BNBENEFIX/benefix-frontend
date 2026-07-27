@@ -63,10 +63,7 @@ export const BenefitsCatalog: React.FC = () => {
   // dados
   const [benefits, setBenefits]             = useState<Benefit[]>([]);
   const [recommendations, setRecommendations] = useState<Benefit[]>([]);
-  const [favorites, setFavorites]           = useState<string[]>(() => {
-    const s = localStorage.getItem('employee_favorites');
-    return s ? JSON.parse(s) : [];
-  });
+  const [favorites, setFavorites]           = useState<string[]>([]);
   const [companyId, setCompanyId]           = useState<number | null>(null);
 
   // UI
@@ -125,7 +122,13 @@ export const BenefitsCatalog: React.FC = () => {
     }
   }, [isManager]);
 
-  useEffect(() => { loadCatalog(); }, [loadCatalog]);
+  useEffect(() => {
+    const saved = localStorage.getItem('employee_favorites');
+    if (saved) {
+      try { setFavorites(JSON.parse(saved)); } catch { setFavorites([]); }
+    }
+    loadCatalog();
+  }, [loadCatalog]);
 
   // ── Ações do gestor ─────────────────────────────────────────────────────────
 
