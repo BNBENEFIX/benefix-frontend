@@ -65,7 +65,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return tokenUser;
     }
 
-    return storedUser;
+    return null;
   }, []);
 
   // Inicializa sessão a partir do token salvo no localStorage
@@ -88,10 +88,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
 
         if (storedToken) {
-          setToken(storedToken);
           const hydratedUser = hydrateUserFromStorage(storedToken, storedUser);
           if (hydratedUser) {
+            setToken(storedToken);
             setUser(hydratedUser);
+          } else {
+            clearSession();
           }
         } else if (storedUser) {
           // Sem token mas com user salvo — sessão inválida, limpa

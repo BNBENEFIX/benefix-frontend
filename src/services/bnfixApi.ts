@@ -30,12 +30,15 @@ const bnfixApi = axios.create({
 
 bnfixApi.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   const token = localStorage.getItem(TOKEN_KEY);
-  if (token && config.headers) {
+  const requestPath = config.url?.split('?')[0].replace(/\/+$/, '');
+  const isLoginRequest = requestPath === '/auth/login';
+
+  if (token && !isLoginRequest && config.headers) {
     config.headers['Authorization'] = `Bearer ${token}`;
     // NÃO setar config.headers['Cookie'] — header proibido em browsers
   }
   console.log(`[bnfixApi →] ${config.method?.toUpperCase()} ${config.baseURL}${config.url}`, {
-    hasToken: !!token,
+    hasToken: !!token && !isLoginRequest,
     body: config.data ? (() => { try { return JSON.parse(config.data); } catch { return config.data; } })() : undefined,
   });
   return config;

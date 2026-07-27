@@ -38,6 +38,11 @@ export const buildUserFromToken = (token: string, emailFallback?: string): User 
   const payload = decodeJwtPayload(token);
   if (!payload) return null;
 
+  const nowInSeconds = Math.floor(Date.now() / 1000);
+  if (typeof payload.exp === 'number' && payload.exp <= nowInSeconds) {
+    return null;
+  }
+
   // Campos comuns em JWT Quarkus/Spring: sub, upn, groups[], roles[]
   const backendRole: BackendRole =
     payload.role ??
@@ -103,7 +108,7 @@ export const login = async (
 
   console.log('[Auth] Token extraído do body:', token ? `${token.slice(0, 40)}...` : '(vazio)');
 
-  // Tenta extrair do cookie Set-Cookie caso o body não traga o token
+  // Fallback útil apenas em ambientes server-side; browsers não expõem Set-Cookie.
   if (!token) {
     const setCookieHeader = (response.headers['set-cookie'] as string | string[] | undefined);
     const cookieStr = Array.isArray(setCookieHeader)
