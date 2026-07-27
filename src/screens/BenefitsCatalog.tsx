@@ -541,7 +541,7 @@ export const BenefitsCatalog: React.FC = () => {
                     onChange={e => setForm(f => ({ ...f, validUntil: e.target.value }))}
                     className={inputCls()} disabled={formLoading} />
                 </Field>
-                <Field label="Utilizações por aluno">
+                <Field label="Utilizações por usuário">
                   <input type="number" min={1} max={100} value={form.maxUsesPerUser}
                     onChange={e => setForm(f => ({ ...f, maxUsesPerUser: Math.max(1, Number(e.target.value)) }))}
                     className={inputCls()} disabled={formLoading} />

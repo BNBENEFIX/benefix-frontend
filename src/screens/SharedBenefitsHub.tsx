@@ -113,7 +113,7 @@ export function SharedBenefitsHub() {
       <div className="mx-auto max-w-[1240px] space-y-10">
         <header className="flex flex-col justify-between gap-5 border-b border-[#d9ddd8] pb-8 sm:flex-row sm:items-end">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[.15em] text-[#2f7a5c]">Área do aluno</p>
+            <p className="text-xs font-semibold uppercase tracking-[.15em] text-[#2f7a5c]">Área do usuário</p>
             <h1 className="mt-3 font-display text-4xl tracking-[-.035em] sm:text-5xl">
               Olá, {user?.name?.split(' ')[0]}.
             </h1>

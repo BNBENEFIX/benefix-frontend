@@ -121,7 +121,7 @@ export function ProviderBenefitsConsole() {
         <div className="rounded-xl border border-[#d9ddd8] bg-[#12372a] p-5 text-white">
           <p className="text-xs font-semibold uppercase tracking-[.14em] text-[#a9c8b8]">Estabelecimento</p>
           <h2 className="mt-2 text-xl font-semibold">Validar benefício</h2>
-          <p className="mt-2 text-xs leading-5 text-[#b9ccc2]">Leia o QR Code apresentado pelo aluno ou cole o token abaixo.</p>
+          <p className="mt-2 text-xs leading-5 text-[#b9ccc2]">Leia o QR Code apresentado pelo usuário ou cole o token abaixo.</p>
 
           {camera && <video ref={videoRef} className="mt-4 aspect-video w-full rounded-lg bg-black object-cover" muted playsInline />}
 
@@ -137,7 +137,7 @@ export function ProviderBenefitsConsole() {
             <div className="mt-5 rounded-lg bg-white p-4 text-[#17201c]">
               <div className="flex items-center gap-2 text-sm font-semibold text-[#23664e]"><CheckCircle2 className="h-4 w-4" /> Código válido</div>
               <div className="mt-3 text-base font-semibold">{preview.benefitName}</div>
-              <div className="mt-1 text-xs text-[#66716b]">Aluno: {preview.beneficiaryName}</div>
+              <div className="mt-1 text-xs text-[#66716b]">Usuário: {preview.beneficiaryName}</div>
               <button onClick={consume} disabled={busy} className="mt-4 flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-[#194b3a] text-xs font-semibold text-white">
                 <ScanLine className="h-4 w-4" /> Confirmar utilização
               </button>
