@@ -19,8 +19,9 @@ import { LayoutDashboard, ShoppingBag, Globe, Loader2 } from 'lucide-react';
 
 const AuthenticatedApp: React.FC = () => {
   const { user } = useAuth();
+  const isEmployee = user?.role === 'EMPLOYEE';
   const [activeTab, setActiveTab] = useState<'landing' | 'catalog' | 'dashboard'>(
-    user?.role === 'EMPLOYEE' ? 'dashboard' : 'landing',
+    isEmployee ? 'dashboard' : 'landing',
   );
 
   const renderDashboard = () => {
@@ -59,7 +60,7 @@ const AuthenticatedApp: React.FC = () => {
             className={`p-2 px-4 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 ${tabClass('catalog')}`}
           >
             <ShoppingBag className="w-4 h-4" />
-            <span>Catálogo</span>
+            <span>{isEmployee ? 'Benefícios' : 'Catálogo'}</span>
           </button>
 
           <button
@@ -74,7 +75,7 @@ const AuthenticatedApp: React.FC = () => {
 
       <main className="flex-1 bg-slate-50/50 dark:bg-slate-950/20 transition-colors">
         {activeTab === 'landing'    && <LandingPage onNavigateToDashboardByRole={() => setActiveTab('catalog')} />}
-        {activeTab === 'catalog'    && <BenefitsCatalog />}
+        {activeTab === 'catalog'    && (isEmployee ? <SharedBenefitsHub /> : <BenefitsCatalog />)}
         {activeTab === 'dashboard'  && renderDashboard()}
       </main>
 
