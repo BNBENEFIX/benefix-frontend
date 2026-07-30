@@ -126,6 +126,12 @@ textarea {
   animation: enter 240ms ease-out both;
 }
 
+.benefix-dot-field {
+  background-image: radial-gradient(rgba(255, 255, 255, 0.16) 0.8px, transparent 0.8px);
+  background-size: 26px 26px;
+  mask-image: linear-gradient(to bottom, black, transparent 88%);
+}
+
 @keyframes enter {
   from {
     opacity: 0;

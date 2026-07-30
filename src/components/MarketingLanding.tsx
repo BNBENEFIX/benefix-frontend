@@ -1,306 +1,677 @@
+'use client';
+
+import { useRef, type ReactNode } from 'react';
 import Link from 'next/link';
 import {
   ArrowRight,
   BadgeCheck,
   Building2,
   Check,
-  ChevronRight,
-  CircleDot,
-  Handshake,
+  CheckCircle2,
+  Clock3,
   HeartPulse,
-  Layers3,
-  LockKeyhole,
-  Search,
+  KeyRound,
+  QrCode,
   ShieldCheck,
+  Sparkles,
+  Store,
   Users,
-  WalletCards,
 } from 'lucide-react';
+import {
+  motion,
+  useReducedMotion,
+  useScroll,
+  useSpring,
+  useTransform,
+} from 'motion/react';
 
-const capabilities = [
+const easeOut = [0.22, 1, 0.36, 1] as const;
+
+const productTasks = [
+  {
+    icon: Building2,
+    number: '01',
+    label: 'Para quem organiza',
+    title: 'Cadastre o benefício sem montar um manual.',
+    text: 'O formulário separa o essencial das regras opcionais e mostra exatamente o que falta.',
+    action: 'Cadastrar benefício',
+    accent: '#F2C96D',
+  },
+  {
+    icon: QrCode,
+    number: '02',
+    label: 'Para quem usa',
+    title: 'Encontre e mostre o QR Code em poucos toques.',
+    text: 'O colaborador entra, escolhe o benefício e apresenta a tela no local de atendimento.',
+    action: 'Mostrar QR Code',
+    accent: '#9FD5BD',
+  },
+  {
+    icon: CheckCircle2,
+    number: '03',
+    label: 'Para quem confirma',
+    title: 'Saiba quando deu certo — sem precisar interpretar.',
+    text: 'Espera, conferência, sucesso e erro ocupam a tela com instruções claras sobre o próximo passo.',
+    action: 'Confirmar uso',
+    accent: '#F0A993',
+  },
+];
+
+const journey = [
+  {
+    number: '01',
+    title: 'A empresa cria',
+    text: 'O gestor cadastra o que oferece e define as regras de uso.',
+    state: 'Benefício disponível',
+  },
+  {
+    number: '02',
+    title: 'A pessoa escolhe',
+    text: 'O colaborador encontra o benefício sem navegar por telas desnecessárias.',
+    state: 'Pronto para usar',
+  },
+  {
+    number: '03',
+    title: 'O QR Code conecta',
+    text: 'Um código temporário leva os dados certos para o local de atendimento.',
+    state: 'Aguardando leitura',
+  },
+  {
+    number: '04',
+    title: 'O uso é confirmado',
+    text: 'A tela informa o resultado e orienta o que fazer em seguida.',
+    state: 'Uso confirmado',
+  },
+];
+
+const contexts = [
+  {
+    icon: Store,
+    title: 'No balcão',
+    text: 'Ação rápida para equipes que atendem com fila e pouco tempo.',
+  },
+  {
+    icon: HeartPulse,
+    title: 'Na recepção',
+    text: 'Confirmação clara para rotinas de atendimento e agendamento.',
+  },
   {
     icon: Users,
-    eyebrow: 'Pessoas',
-    title: 'A equipe organizada, de verdade',
-    text: 'Cadastre, atualize, ative ou desative colaboradores mantendo cada empresa em seu próprio ambiente.',
-  },
-  {
-    icon: WalletCards,
-    eyebrow: 'Benefícios',
-    title: 'Um catálogo que o RH controla',
-    text: 'Crie benefícios internos e encontre novas opções no marketplace para montar uma oferta coerente.',
-  },
-  {
-    icon: Handshake,
-    eyebrow: 'Parcerias',
-    title: 'Parcerias com fluxo claro',
-    text: 'Solicite, aceite, rejeite ou encerre parcerias sem depender de planilhas e conversas espalhadas.',
+    title: 'No consultório',
+    text: 'Linguagem neutra para benefícios ligados a cuidado e bem-estar.',
   },
 ];
 
-const flow = [
-  ['01', 'Cadastre a empresa', 'Crie a organização e o primeiro acesso de gestão em um único fluxo.'],
-  ['02', 'Monte a estrutura', 'Adicione colaboradores e organize os benefícios disponíveis para o time.'],
-  ['03', 'Conecte novas ofertas', 'Explore o marketplace e formalize parcerias dentro da plataforma.'],
-  ['04', 'Dê autonomia', 'O colaborador acessa a conta e realiza a adesão ao benefício escolhido.'],
-];
+interface RevealProps {
+  children: ReactNode;
+  className?: string;
+  delay?: number;
+}
+
+function Reveal({ children, className = '', delay = 0 }: RevealProps) {
+  const reduceMotion = useReducedMotion();
+
+  return (
+    <motion.div
+      className={className}
+      initial={reduceMotion ? false : { opacity: 0, y: 30 }}
+      whileInView={reduceMotion ? undefined : { opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.18 }}
+      transition={{ duration: 0.72, delay, ease: easeOut }}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+function BenefitPass({ reduceMotion }: { reduceMotion: boolean }) {
+  const float = (delay: number, distance = 8) => reduceMotion
+    ? undefined
+    : {
+        y: [0, -distance, 0],
+        rotate: [0, 0.7, 0],
+        transition: {
+          duration: 4.8,
+          delay,
+          repeat: Infinity,
+          ease: 'easeInOut' as const,
+        },
+      };
+
+  return (
+    <div
+      className="relative mx-auto h-[480px] w-full max-w-[560px] sm:h-[540px]"
+      role="img"
+      aria-label="Fluxo visual de um benefício liberado, apresentado por QR Code e confirmado no atendimento"
+    >
+      <svg
+        viewBox="0 0 560 540"
+        className="absolute inset-0 h-full w-full overflow-visible"
+        aria-hidden="true"
+      >
+        <motion.path
+          d="M55 116 C155 10 332 32 462 113 C547 167 527 276 427 314 C318 355 331 476 194 495 C92 510 24 433 83 356"
+          fill="none"
+          stroke="rgba(242,201,109,.32)"
+          strokeWidth="1.5"
+          strokeDasharray="6 9"
+          initial={reduceMotion ? false : { pathLength: 0, opacity: 0 }}
+          animate={reduceMotion ? undefined : { pathLength: 1, opacity: 1 }}
+          transition={{ duration: 1.8, delay: 0.65, ease: easeOut }}
+        />
+        <motion.circle
+          cx="55"
+          cy="116"
+          r="5"
+          fill="#F2C96D"
+          initial={reduceMotion ? false : { scale: 0, opacity: 0 }}
+          animate={reduceMotion ? undefined : { scale: [1, 1.8, 1], opacity: [1, 0.5, 1] }}
+          transition={{ duration: 2.4, repeat: Infinity }}
+        />
+        <motion.circle
+          cx="462"
+          cy="113"
+          r="4"
+          fill="#9FD5BD"
+          initial={reduceMotion ? false : { scale: 0 }}
+          animate={reduceMotion ? undefined : { scale: [1, 1.7, 1] }}
+          transition={{ duration: 2.8, delay: 0.7, repeat: Infinity }}
+        />
+      </svg>
+
+      <motion.div
+        className="absolute right-0 top-7 z-20 w-[178px] rounded-2xl border border-white/15 bg-[#174738] p-4 shadow-[0_18px_45px_rgba(0,0,0,.18)] sm:right-2 sm:w-[202px]"
+        initial={reduceMotion ? false : { opacity: 0, x: 38, rotate: 4 }}
+        animate={reduceMotion ? undefined : { opacity: 1, x: 0, rotate: 1.5 }}
+        transition={{ duration: 0.85, delay: 0.8, ease: easeOut }}
+      >
+        <motion.div animate={float(1.2, 6)}>
+          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#F2C96D] text-[#17352b]">
+            <Building2 className="h-4 w-4" />
+          </span>
+          <p className="mt-3 text-[10px] font-semibold uppercase tracking-[.12em] text-white/50">
+            Empresa
+          </p>
+          <p className="mt-1 text-sm font-semibold text-white">Benefício liberado</p>
+          <p className="mt-1 text-xs text-[#b9d2c5]">Pronto para a equipe</p>
+        </motion.div>
+      </motion.div>
+
+      <motion.div
+        className="absolute left-0 top-[185px] z-30 w-[156px] rounded-2xl border border-[#d9e3dc] bg-[#F4F6F1] p-4 text-[#18211D] shadow-[0_20px_50px_rgba(1,20,12,.22)] sm:left-1 sm:w-[182px]"
+        initial={reduceMotion ? false : { opacity: 0, x: -35, rotate: -5 }}
+        animate={reduceMotion ? undefined : { opacity: 1, x: 0, rotate: -2 }}
+        transition={{ duration: 0.85, delay: 1.05, ease: easeOut }}
+      >
+        <motion.div animate={float(0.4, 7)}>
+          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#dcece4] text-[#2F7658]">
+            <Users className="h-4 w-4" />
+          </span>
+          <p className="mt-3 text-[10px] font-semibold uppercase tracking-[.12em] text-[#748078]">
+            Colaborador
+          </p>
+          <p className="mt-1 text-sm font-semibold">Pronto para usar</p>
+        </motion.div>
+      </motion.div>
+
+      <motion.div
+        className="absolute inset-x-[48px] top-[98px] z-10 overflow-hidden rounded-[28px] border border-white/30 bg-white p-4 text-[#18211D] shadow-[0_38px_90px_rgba(0,0,0,.32)] sm:inset-x-[94px] sm:top-[94px] sm:p-5"
+        initial={reduceMotion ? false : { opacity: 0, y: 55, rotateX: 12, scale: 0.94 }}
+        animate={reduceMotion ? undefined : { opacity: 1, y: 0, rotateX: 0, scale: 1 }}
+        transition={{ duration: 1, delay: 0.45, ease: easeOut }}
+        style={{ transformPerspective: 900 }}
+      >
+        <div className="flex items-center justify-between gap-3 border-b border-[#e6ebe7] pb-4">
+          <div className="flex items-center gap-2.5">
+            <img src="/favicon.png" alt="" className="h-8 w-8 rounded-lg object-contain" />
+            <div>
+              <p className="text-xs font-semibold">Passe BNFix</p>
+              <p className="mt-0.5 text-[10px] text-[#758078]">Uso temporário</p>
+            </div>
+          </div>
+          <span className="rounded-full bg-[#e8f4ed] px-2.5 py-1 text-[10px] font-semibold text-[#2F7658]">
+            Liberado
+          </span>
+        </div>
+
+        <div className="pt-4">
+          <p className="text-[10px] font-semibold uppercase tracking-[.12em] text-[#78837c]">
+            Cuidado e bem-estar
+          </p>
+          <h3 className="mt-1.5 font-display text-[1.65rem] leading-tight tracking-[-.025em]">
+            Sessão de cuidado integral
+          </h3>
+          <p className="mt-1.5 text-xs text-[#6d7972]">Empresa parceira</p>
+        </div>
+
+        <div className="relative mx-auto mt-5 flex h-[146px] w-[146px] items-center justify-center overflow-hidden rounded-2xl border border-[#dce3de] bg-[#f9faf7] sm:h-[166px] sm:w-[166px]">
+          <QrCode className="h-[112px] w-[112px] text-[#11271f] sm:h-[132px] sm:w-[132px]" strokeWidth={1.35} />
+          <motion.div
+            className="absolute inset-x-3 top-2 h-px bg-[#DC765E] shadow-[0_0_14px_3px_rgba(220,118,94,.48)]"
+            animate={reduceMotion ? undefined : { y: [0, 126, 0] }}
+            transition={{ duration: 3.2, repeat: Infinity, ease: 'easeInOut' }}
+          />
+        </div>
+
+        <div className="mt-4 flex items-center justify-center gap-2 rounded-xl bg-[#eff5f0] px-3 py-3 text-[#1e5d45]">
+          <Clock3 className="h-4 w-4" />
+          <span className="font-mono text-xs font-semibold">Expira em 04:52</span>
+        </div>
+        <p className="mt-3 text-center text-[11px] leading-5 text-[#78837c]">
+          Mostre esta tela no atendimento
+        </p>
+      </motion.div>
+
+      <motion.div
+        className="absolute bottom-5 right-1 z-30 w-[184px] rounded-2xl bg-[#F2C96D] p-4 text-[#17352b] shadow-[0_20px_48px_rgba(0,0,0,.22)] sm:bottom-8 sm:right-3 sm:w-[210px]"
+        initial={reduceMotion ? false : { opacity: 0, y: 35, rotate: 5 }}
+        animate={reduceMotion ? undefined : { opacity: 1, y: 0, rotate: 2 }}
+        transition={{ duration: 0.85, delay: 1.35, ease: easeOut }}
+      >
+        <motion.div animate={float(1.8, 6)}>
+          <CheckCircle2 className="h-6 w-6" />
+          <p className="mt-3 text-[10px] font-semibold uppercase tracking-[.12em] opacity-60">
+            Atendimento
+          </p>
+          <p className="mt-1 text-sm font-semibold">Uso confirmado</p>
+          <p className="mt-1 text-xs opacity-70">Tudo certo para continuar</p>
+        </motion.div>
+      </motion.div>
+    </div>
+  );
+}
 
 export function MarketingLanding() {
+  const reduceMotion = Boolean(useReducedMotion());
+  const heroRef = useRef<HTMLElement>(null);
+  const { scrollYProgress } = useScroll();
+  const smoothProgress = useSpring(scrollYProgress, {
+    stiffness: 140,
+    damping: 28,
+    mass: 0.35,
+  });
+  const { scrollYProgress: heroProgress } = useScroll({
+    target: heroRef,
+    offset: ['start start', 'end start'],
+  });
+  const heroCopyY = useTransform(heroProgress, [0, 1], [0, 70]);
+  const heroVisualY = useTransform(heroProgress, [0, 1], [0, 110]);
+
   return (
-    <main className="overflow-hidden bg-[#f6f5f1] text-[#17201c]">
-      <header className="absolute inset-x-0 top-0 z-30">
-        <div className="mx-auto flex h-20 max-w-[1240px] items-center justify-between px-5 sm:px-8">
-          <Link href="/" className="flex items-center gap-3" aria-label="BNFix — página inicial">
-            <img src="/favicon.png" alt="" className="h-10 w-10 rounded-lg bg-white object-contain p-1 shadow-sm" />
+    <main className="overflow-hidden bg-[#F4F6F1] text-[#18211D]">
+      <motion.div
+        className="fixed inset-x-0 top-0 z-[70] h-[3px] origin-left bg-[#F2C96D]"
+        style={{ scaleX: smoothProgress }}
+        aria-hidden="true"
+      />
+
+      <header className="absolute inset-x-0 top-0 z-40">
+        <motion.div
+          className="mx-auto flex h-20 max-w-[1240px] items-center justify-between px-4 sm:h-24 sm:px-8"
+          initial={reduceMotion ? false : { opacity: 0, y: -18 }}
+          animate={reduceMotion ? undefined : { opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 0.15, ease: easeOut }}
+        >
+          <Link href="/" className="flex items-center gap-2.5" aria-label="BNFix — página inicial">
+            <img
+              src="/favicon.png"
+              alt=""
+              className="h-9 w-9 rounded-lg bg-white object-contain p-1 shadow-sm sm:h-10 sm:w-10"
+            />
             <div>
-              <div className="text-[17px] font-semibold leading-none tracking-[-0.02em] text-white">BNFix</div>
-              <div className="mt-1 text-[10px] font-medium uppercase tracking-[0.14em] text-white/55">Benefícios</div>
+              <div className="text-base font-semibold leading-none tracking-[-.02em] text-white">
+                BNFix
+              </div>
+              <div className="mt-1 text-[10px] font-medium tracking-[0.08em] text-white/55">
+                Benefícios claros
+              </div>
             </div>
           </Link>
 
-          <nav className="hidden items-center gap-8 text-sm text-white/75 md:flex" aria-label="Navegação principal">
+          <nav className="hidden items-center gap-8 text-sm text-white/70 lg:flex" aria-label="Navegação principal">
             <a href="#produto" className="hover:text-white">Produto</a>
             <a href="#como-funciona" className="hover:text-white">Como funciona</a>
+            <a href="#rotinas" className="hover:text-white">Para sua rotina</a>
             <a href="#seguranca" className="hover:text-white">Segurança</a>
           </nav>
 
-          <div className="flex items-center gap-2">
-            <Link href="/entrar" className="hidden rounded-lg px-4 py-2.5 text-sm font-semibold text-white hover:bg-white/10 sm:block">
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <Link
+              href="/entrar"
+              className="rounded-lg px-3 py-2.5 text-sm font-semibold text-white hover:bg-white/10 sm:px-4"
+            >
               Entrar
             </Link>
-            <Link href="/cadastro" className="rounded-lg bg-[#d8a84e] px-4 py-2.5 text-sm font-semibold text-[#183128] hover:bg-[#e5b85e]">
+            <Link
+              href="/cadastro"
+              className="rounded-lg bg-[#F2C96D] px-3.5 py-2.5 text-sm font-semibold text-[#17352b] hover:bg-[#f7d985] sm:px-4"
+            >
               Criar conta
             </Link>
           </div>
-        </div>
+        </motion.div>
       </header>
 
-      <section className="relative bg-[#12372a] pb-24 pt-36 text-white sm:pb-32 sm:pt-44">
-        <div className="absolute inset-0 overflow-hidden" aria-hidden="true">
-          <div className="absolute -right-40 top-20 h-[540px] w-[540px] rounded-full border border-white/[0.06]" />
-          <div className="absolute -right-20 top-40 h-[360px] w-[360px] rounded-full border border-white/[0.06]" />
-          <div className="absolute bottom-0 left-[8%] h-px w-[84%] bg-white/10" />
-        </div>
+      <section
+        ref={heroRef}
+        className="relative min-h-[880px] bg-[#0B3024] pb-24 pt-32 text-white sm:pt-40 lg:flex lg:min-h-[820px] lg:items-center lg:pb-28 lg:pt-32"
+      >
+        <div className="benefix-dot-field absolute inset-0 opacity-35" aria-hidden="true" />
+        <div className="absolute inset-x-[8%] bottom-0 h-px bg-white/10" aria-hidden="true" />
 
-        <div className="relative mx-auto grid max-w-[1240px] items-center gap-14 px-5 sm:px-8 lg:grid-cols-[.92fr_1.08fr] lg:gap-16">
-          <div>
-            <div className="mb-7 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.06] px-3 py-1.5 text-xs font-medium text-[#b9d4c6]">
-              <CircleDot className="h-3.5 w-3.5 text-[#e2b45b]" />
-              Gestão de benefícios em um só lugar
-            </div>
-            <h1 className="max-w-2xl font-display text-[3.25rem] leading-[.98] tracking-[-0.045em] sm:text-6xl lg:text-[4.6rem]">
-              Benefícios que fazem sentido para a empresa e para as pessoas.
+        <div className="relative mx-auto grid w-full max-w-[1240px] items-center gap-10 px-4 sm:px-8 lg:grid-cols-[.9fr_1.1fr] lg:gap-8">
+          <motion.div style={reduceMotion ? undefined : { y: heroCopyY }}>
+            <motion.div
+              className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.06] px-3 py-1.5 text-xs font-medium text-[#b9d4c6]"
+              initial={reduceMotion ? false : { opacity: 0, y: 18 }}
+              animate={reduceMotion ? undefined : { opacity: 1, y: 0 }}
+              transition={{ duration: 0.7, delay: 0.35, ease: easeOut }}
+            >
+              <Sparkles className="h-3.5 w-3.5 text-[#F2C96D]" />
+              Benefícios que chegam até as pessoas
+            </motion.div>
+
+            <h1 className="max-w-[680px] font-display text-[3.2rem] leading-[.94] tracking-[-.048em] sm:text-[4.5rem] lg:text-[5rem]">
+              {[
+                'O benefício',
+                'sai do papel',
+                'e vira cuidado.',
+              ].map((line, index) => (
+                <span key={line} className="block overflow-hidden pb-[.08em]">
+                  <motion.span
+                    className={`block ${index === 2 ? 'text-[#F2C96D]' : ''}`}
+                    initial={reduceMotion ? false : { y: '110%', rotate: 2 }}
+                    animate={reduceMotion ? undefined : { y: 0, rotate: 0 }}
+                    transition={{ duration: 0.9, delay: 0.42 + index * 0.1, ease: easeOut }}
+                  >
+                    {line}
+                  </motion.span>
+                </span>
+              ))}
             </h1>
-            <p className="mt-7 max-w-xl text-base leading-7 text-[#c8d8d0] sm:text-lg sm:leading-8">
-              A BNFix reúne RH, colaboradores e parceiros em uma operação simples: menos controle manual, mais clareza para escolher e gerir cada benefício.
-            </p>
-            <div className="mt-9 flex flex-col gap-3 sm:flex-row">
-              <Link href="/cadastro" className="inline-flex h-12 items-center justify-center gap-2 rounded-lg bg-[#d8a84e] px-6 text-sm font-semibold text-[#183128] hover:bg-[#e5b85e]">
-                Cadastrar minha empresa
-                <ArrowRight className="h-4 w-4" />
-              </Link>
-              <a href="#produto" className="inline-flex h-12 items-center justify-center gap-2 rounded-lg border border-white/20 px-6 text-sm font-semibold text-white hover:bg-white/[0.07]">
-                Conhecer a plataforma
-              </a>
-            </div>
-            <div className="mt-8 flex flex-wrap gap-x-6 gap-y-3 text-xs text-white/55">
-              <span className="flex items-center gap-2"><Check className="h-3.5 w-3.5 text-[#e2b45b]" /> Cadastro sem cartão</span>
-              <span className="flex items-center gap-2"><Check className="h-3.5 w-3.5 text-[#e2b45b]" /> Acesso por perfil</span>
-              <span className="flex items-center gap-2"><Check className="h-3.5 w-3.5 text-[#e2b45b]" /> Operação centralizada</span>
-            </div>
-          </div>
 
-          <div className="relative lg:pl-6">
-            <div className="absolute -inset-8 rounded-full bg-[#2f7a5c]/20 blur-3xl" aria-hidden="true" />
-            <div className="relative overflow-hidden rounded-[18px] border border-white/15 bg-[#f8f8f5] text-[#17201c] shadow-[0_32px_80px_rgba(2,18,11,.28)]">
-              <div className="flex h-12 items-center justify-between border-b border-[#e2e4df] bg-white px-4">
-                <div className="flex items-center gap-2.5">
-                  <div className="flex h-7 w-7 items-center justify-center rounded-md bg-[#194b3a] text-[10px] font-bold text-white">BN</div>
-                  <span className="text-xs font-semibold">Visão geral</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="h-2 w-2 rounded-full bg-[#2f7a5c]" />
-                  <span className="text-[10px] text-[#66716b]">Empresa ativa</span>
-                </div>
-              </div>
-              <div className="grid grid-cols-[54px_1fr]">
-                <aside className="flex flex-col items-center gap-4 border-r border-[#e2e4df] bg-white py-5">
-                  {[Layers3, Users, WalletCards, Handshake].map((Icon, index) => (
-                    <span key={index} className={`flex h-8 w-8 items-center justify-center rounded-md ${index === 0 ? 'bg-[#edf5f0] text-[#194b3a]' : 'text-[#9ba49f]'}`}>
-                      <Icon className="h-4 w-4" />
-                    </span>
-                  ))}
-                </aside>
-                <div className="p-4 sm:p-6">
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <p className="text-[10px] font-semibold uppercase tracking-[.12em] text-[#7a857f]">Olá, Mariana</p>
-                      <h2 className="mt-1 text-base font-semibold tracking-tight">Sua operação hoje</h2>
-                    </div>
-                    <button className="rounded-md bg-[#194b3a] px-3 py-2 text-[10px] font-semibold text-white">Novo benefício</button>
-                  </div>
-                  <div className="mt-5 grid grid-cols-3 gap-2.5">
-                    {[['128', 'Colaboradores'], ['12', 'Benefícios'], ['04', 'Parcerias']].map(([value, label]) => (
-                      <div key={label} className="rounded-lg border border-[#dde1dc] bg-white p-3">
-                        <div className="text-lg font-semibold tracking-tight sm:text-xl">{value}</div>
-                        <div className="mt-1 truncate text-[8px] text-[#738078] sm:text-[9px]">{label}</div>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="mt-3 rounded-lg border border-[#dde1dc] bg-white p-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <div className="text-[10px] font-semibold">Benefícios disponíveis</div>
-                        <div className="mt-0.5 text-[8px] text-[#7a857f]">Organizados por categoria</div>
-                      </div>
-                      <Search className="h-3.5 w-3.5 text-[#7a857f]" />
-                    </div>
-                    <div className="mt-4 space-y-3">
-                      {[
-                        ['Saúde integral', 'Saúde', 'Ativo'],
-                        ['Bolsa de estudos', 'Educação', 'Ativo'],
-                        ['Mobilidade urbana', 'Transporte', 'Pendente'],
-                      ].map(([name, category, status], index) => (
-                        <div key={name} className="grid grid-cols-[1fr_auto] items-center gap-3 border-t border-[#edf0ec] pt-3 first:border-0 first:pt-0">
-                          <div className="flex items-center gap-3">
-                            <span className={`h-8 w-1 rounded-full ${index === 2 ? 'bg-[#d8a84e]' : 'bg-[#2f7a5c]'}`} />
-                            <div>
-                              <div className="text-[10px] font-semibold">{name}</div>
-                              <div className="mt-0.5 text-[8px] text-[#7a857f]">{category}</div>
-                            </div>
-                          </div>
-                          <span className={`rounded-full px-2 py-1 text-[7px] font-semibold ${index === 2 ? 'bg-[#fff5df] text-[#8a6118]' : 'bg-[#edf5f0] text-[#23664e]'}`}>{status}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+            <motion.p
+              className="mt-7 max-w-xl text-base leading-7 text-[#c4d7ce] sm:text-lg sm:leading-8"
+              initial={reduceMotion ? false : { opacity: 0, y: 20 }}
+              animate={reduceMotion ? undefined : { opacity: 1, y: 0 }}
+              transition={{ duration: 0.75, delay: 0.85, ease: easeOut }}
+            >
+              A BNFix organiza o caminho entre quem oferece e quem usa: cadastro simples,
+              acesso direto e confirmação por QR Code.
+            </motion.p>
+
+            <motion.div
+              className="mt-8 flex flex-col gap-3 sm:flex-row"
+              initial={reduceMotion ? false : { opacity: 0, y: 20 }}
+              animate={reduceMotion ? undefined : { opacity: 1, y: 0 }}
+              transition={{ duration: 0.75, delay: 1, ease: easeOut }}
+            >
+              <Link
+                href="/cadastro"
+                className="group inline-flex h-13 items-center justify-center gap-2 rounded-xl bg-[#F2C96D] px-6 text-sm font-semibold text-[#17352b] hover:bg-[#f7d985]"
+              >
+                Cadastrar minha empresa
+                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+              </Link>
+              <a
+                href="#produto"
+                className="inline-flex h-13 items-center justify-center rounded-xl border border-white/20 px-6 text-sm font-semibold text-white hover:bg-white/[0.07]"
+              >
+                Ver como funciona
+              </a>
+            </motion.div>
+
+            <motion.div
+              className="mt-7 flex flex-wrap gap-x-5 gap-y-2.5 text-xs text-white/55"
+              initial={reduceMotion ? false : { opacity: 0 }}
+              animate={reduceMotion ? undefined : { opacity: 1 }}
+              transition={{ duration: 0.8, delay: 1.18 }}
+            >
+              {['Sem cartão', 'Acesso por perfil', 'Experiência mobile'].map((item) => (
+                <span key={item} className="flex items-center gap-2">
+                  <Check className="h-3.5 w-3.5 text-[#F2C96D]" />
+                  {item}
+                </span>
+              ))}
+            </motion.div>
+          </motion.div>
+
+          <motion.div
+            className="relative lg:translate-x-3"
+            style={reduceMotion ? undefined : { y: heroVisualY }}
+          >
+            <BenefitPass reduceMotion={reduceMotion} />
+          </motion.div>
         </div>
       </section>
 
-      <section id="produto" className="px-5 py-24 sm:px-8 sm:py-32">
+      <section className="border-b border-[#d9e0da] bg-white px-4 py-8 sm:px-8">
+        <div className="mx-auto grid max-w-[1240px] gap-5 sm:grid-cols-3 sm:divide-x sm:divide-[#d9e0da]">
+          {[
+            ['Uma entrada', 'O perfil certo já abre na tarefa certa.'],
+            ['Uma ação principal', 'Cada tela deixa claro o que fazer agora.'],
+            ['Um resultado visível', 'Sucesso e erro não passam despercebidos.'],
+          ].map(([title, text], index) => (
+            <Reveal key={title} delay={index * 0.08} className="sm:px-6 sm:first:pl-0">
+              <p className="text-sm font-semibold text-[#183f31]">{title}</p>
+              <p className="mt-1.5 text-sm leading-6 text-[#6b7770]">{text}</p>
+            </Reveal>
+          ))}
+        </div>
+      </section>
+
+      <section id="produto" className="px-4 py-24 sm:px-8 sm:py-32">
         <div className="mx-auto max-w-[1240px]">
-          <div className="grid gap-8 border-b border-[#d9ddd8] pb-12 lg:grid-cols-[.75fr_1fr] lg:items-end">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[.16em] text-[#2f7a5c]">O produto</p>
-              <h2 className="mt-4 max-w-xl font-display text-4xl leading-[1.08] tracking-[-0.035em] sm:text-5xl">
-                A estrutura que o RH precisa. Sem o peso de uma ferramenta complicada.
+          <div className="grid gap-7 border-b border-[#d7ded8] pb-12 lg:grid-cols-[.85fr_1fr] lg:items-end">
+            <Reveal>
+              <p className="text-xs font-semibold uppercase tracking-[.15em] text-[#2F7658]">
+                Clareza em cada tarefa
+              </p>
+              <h2 className="mt-4 max-w-2xl font-display text-4xl leading-[1.04] tracking-[-.038em] sm:text-5xl">
+                A interface explica o caminho enquanto a pessoa usa.
               </h2>
-            </div>
-            <p className="max-w-xl text-base leading-7 text-[#66716b] lg:justify-self-end">
-              Cada área da BNFix foi desenhada em torno de uma tarefa concreta. Sua equipe encontra o que precisa, entende o estado de cada operação e segue em frente.
-            </p>
+            </Reveal>
+            <Reveal delay={0.1} className="lg:justify-self-end">
+              <p className="max-w-xl text-base leading-7 text-[#66736c]">
+                Gestores e colaboradores não precisam aprender “como o sistema funciona”.
+                Cada tela usa verbos diretos, estados grandes e uma próxima ação evidente.
+              </p>
+            </Reveal>
           </div>
 
-          <div className="grid divide-y divide-[#d9ddd8] lg:grid-cols-3 lg:divide-x lg:divide-y-0">
-            {capabilities.map(({ icon: Icon, eyebrow, title, text }) => (
-              <article key={title} className="py-10 first:pl-0 lg:px-8 lg:py-12 lg:first:pr-8 lg:last:pr-0">
-                <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-[#e3eee7] text-[#194b3a]">
-                  <Icon className="h-5 w-5" />
-                </div>
-                <p className="mt-7 text-xs font-semibold uppercase tracking-[.14em] text-[#2f7a5c]">{eyebrow}</p>
-                <h3 className="mt-3 text-xl font-semibold tracking-[-0.02em]">{title}</h3>
-                <p className="mt-3 text-sm leading-6 text-[#66716b]">{text}</p>
-              </article>
+          <div className="mt-8 grid gap-4 lg:grid-cols-3">
+            {productTasks.map(({ icon: Icon, number, label, title, text, action, accent }, index) => (
+              <Reveal key={title} delay={index * 0.09}>
+                <motion.article
+                  className="group flex min-h-[420px] flex-col overflow-hidden rounded-3xl border border-[#d6ded8] bg-white p-6 shadow-[0_12px_40px_rgba(23,63,50,.05)] sm:p-7"
+                  whileHover={reduceMotion ? undefined : { y: -7 }}
+                  transition={{ duration: 0.35, ease: easeOut }}
+                >
+                  <div className="flex items-center justify-between">
+                    <span
+                      className="flex h-12 w-12 items-center justify-center rounded-2xl text-[#17352b]"
+                      style={{ backgroundColor: accent }}
+                    >
+                      <Icon className="h-5 w-5" />
+                    </span>
+                    <span className="font-mono text-xs text-[#8a958f]">{number}</span>
+                  </div>
+                  <p className="mt-8 text-xs font-semibold uppercase tracking-[.13em] text-[#2F7658]">
+                    {label}
+                  </p>
+                  <h3 className="mt-3 text-2xl font-semibold leading-tight tracking-[-.025em]">
+                    {title}
+                  </h3>
+                  <p className="mt-4 text-sm leading-6 text-[#68756e]">{text}</p>
+                  <div className="mt-auto pt-8">
+                    <div className="flex h-12 items-center justify-center gap-2 rounded-xl bg-[#edf3ee] px-4 text-sm font-semibold text-[#173f32] transition-colors group-hover:bg-[#173f32] group-hover:text-white">
+                      {action}
+                      <ArrowRight className="h-4 w-4" />
+                    </div>
+                  </div>
+                </motion.article>
+              </Reveal>
             ))}
           </div>
         </div>
       </section>
 
-      <section id="como-funciona" className="bg-[#edece6] px-5 py-24 sm:px-8 sm:py-32">
-        <div className="mx-auto max-w-[1240px]">
-          <div className="grid gap-12 lg:grid-cols-[.7fr_1.3fr] lg:gap-24">
-            <div className="lg:sticky lg:top-28 lg:self-start">
-              <p className="text-xs font-semibold uppercase tracking-[.16em] text-[#2f7a5c]">Como funciona</p>
-              <h2 className="mt-4 font-display text-4xl leading-[1.08] tracking-[-0.035em] sm:text-5xl">
-                Da empresa cadastrada ao benefício utilizado.
-              </h2>
-              <p className="mt-5 text-sm leading-6 text-[#66716b]">
-                Um fluxo direto, com responsabilidades claras para gestores e colaboradores.
-              </p>
-            </div>
-            <ol className="border-t border-[#cdd2cc]">
-              {flow.map(([number, title, text]) => (
-                <li key={number} className="grid gap-4 border-b border-[#cdd2cc] py-7 sm:grid-cols-[72px_1fr_auto] sm:items-center">
-                  <span className="font-mono text-xs text-[#86918b]">{number}</span>
-                  <div>
-                    <h3 className="text-lg font-semibold tracking-[-0.015em]">{title}</h3>
-                    <p className="mt-1.5 max-w-xl text-sm leading-6 text-[#66716b]">{text}</p>
+      <section id="como-funciona" className="bg-[#e9eee9] px-4 py-24 sm:px-8 sm:py-32">
+        <div className="mx-auto grid max-w-[1240px] gap-12 lg:grid-cols-[.72fr_1.28fr] lg:gap-24">
+          <Reveal className="lg:sticky lg:top-28 lg:self-start">
+            <p className="text-xs font-semibold uppercase tracking-[.15em] text-[#2F7658]">
+              Uma jornada, quatro momentos
+            </p>
+            <h2 className="mt-4 font-display text-4xl leading-[1.04] tracking-[-.038em] sm:text-5xl">
+              Do cadastro ao “uso confirmado”.
+            </h2>
+            <p className="mt-5 max-w-md text-base leading-7 text-[#66736c]">
+              Cada pessoa enxerga apenas o trecho da jornada que precisa executar.
+            </p>
+          </Reveal>
+
+          <ol className="relative">
+            <div className="absolute bottom-8 left-[19px] top-8 w-px bg-[#c7d3ca]" aria-hidden="true" />
+            {journey.map((step, index) => (
+              <Reveal key={step.number} delay={index * 0.06}>
+                <li className="relative grid grid-cols-[40px_1fr] gap-5 border-b border-[#cbd5cd] py-7 first:pt-0">
+                  <span className="relative z-10 flex h-10 w-10 items-center justify-center rounded-full border border-[#b9c9be] bg-[#e9eee9] font-mono text-xs text-[#517060]">
+                    {step.number}
+                  </span>
+                  <div className="grid gap-4 sm:grid-cols-[1fr_auto] sm:items-center">
+                    <div>
+                      <h3 className="text-xl font-semibold tracking-[-.02em]">{step.title}</h3>
+                      <p className="mt-2 max-w-lg text-sm leading-6 text-[#66736c]">{step.text}</p>
+                    </div>
+                    <span className="w-fit rounded-full border border-[#bdcabf] bg-white/55 px-3 py-1.5 text-xs font-semibold text-[#2F7658]">
+                      {step.state}
+                    </span>
                   </div>
-                  <ChevronRight className="hidden h-5 w-5 text-[#9aa39e] sm:block" />
                 </li>
-              ))}
-            </ol>
+              </Reveal>
+            ))}
+          </ol>
+        </div>
+      </section>
+
+      <section id="rotinas" className="relative bg-[#0B3024] px-4 py-24 text-white sm:px-8 sm:py-32">
+        <div className="benefix-dot-field absolute inset-0 opacity-25" aria-hidden="true" />
+        <div className="relative mx-auto max-w-[1240px]">
+          <Reveal className="max-w-3xl">
+            <p className="text-xs font-semibold uppercase tracking-[.15em] text-[#9FD5BD]">
+              Feita para rotinas reais
+            </p>
+            <h2 className="mt-4 font-display text-4xl leading-[1.04] tracking-[-.038em] sm:text-5xl">
+              A mesma clareza, mesmo quando o dia muda completamente.
+            </h2>
+            <p className="mt-5 max-w-2xl text-base leading-7 text-[#bfd2c8]">
+              A linguagem permanece neutra e direta para funcionar em diferentes tipos de
+              empresa e atendimento.
+            </p>
+          </Reveal>
+
+          <div className="mt-12 grid gap-px overflow-hidden rounded-3xl border border-white/10 bg-white/10 lg:grid-cols-3">
+            {contexts.map(({ icon: Icon, title, text }, index) => (
+              <Reveal key={title} delay={index * 0.09}>
+                <motion.article
+                  className="min-h-64 bg-[#10382b] p-7 sm:p-9"
+                  whileHover={reduceMotion ? undefined : { backgroundColor: '#164737' }}
+                >
+                  <Icon className="h-6 w-6 text-[#F2C96D]" />
+                  <h3 className="mt-10 text-2xl font-semibold tracking-[-.02em]">{title}</h3>
+                  <p className="mt-3 text-sm leading-6 text-[#afc7ba]">{text}</p>
+                </motion.article>
+              </Reveal>
+            ))}
           </div>
         </div>
       </section>
 
-      <section id="seguranca" className="px-5 py-24 sm:px-8 sm:py-32">
-        <div className="mx-auto grid max-w-[1240px] overflow-hidden rounded-[20px] bg-[#163e30] text-white lg:grid-cols-[1.05fr_.95fr]">
-          <div className="p-8 sm:p-12 lg:p-16">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/10">
-              <ShieldCheck className="h-6 w-6 text-[#e2b45b]" />
-            </div>
-            <p className="mt-8 text-xs font-semibold uppercase tracking-[.16em] text-[#a9c8b8]">Acesso e isolamento</p>
-            <h2 className="mt-4 max-w-xl font-display text-4xl leading-[1.08] tracking-[-0.035em] sm:text-5xl">
-              Cada pessoa vê o que precisa. Cada empresa cuida do que é seu.
-            </h2>
-            <p className="mt-6 max-w-xl text-sm leading-7 text-[#c8d8d0]">
-              A plataforma usa autenticação por token, controle de acesso por perfil e separação dos dados por empresa no backend.
+      <section id="seguranca" className="px-4 py-24 sm:px-8 sm:py-32">
+        <div className="mx-auto grid max-w-[1240px] overflow-hidden rounded-3xl border border-[#d4ddd6] bg-white lg:grid-cols-[1.05fr_.95fr]">
+          <Reveal className="p-7 sm:p-12 lg:p-16">
+            <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#e2eee6] text-[#2F7658]">
+              <ShieldCheck className="h-6 w-6" />
+            </span>
+            <p className="mt-8 text-xs font-semibold uppercase tracking-[.15em] text-[#2F7658]">
+              Segurança sem complicação
             </p>
-          </div>
-          <div className="grid gap-px bg-white/10">
+            <h2 className="mt-4 max-w-xl font-display text-4xl leading-[1.04] tracking-[-.038em] sm:text-5xl">
+              Cada empresa no seu espaço. Cada pessoa no caminho certo.
+            </h2>
+            <p className="mt-6 max-w-xl text-sm leading-7 text-[#66736c]">
+              A BNFix protege o acesso e mostra somente o que cada perfil precisa para
+              realizar sua tarefa.
+            </p>
+          </Reveal>
+
+          <div className="grid gap-px bg-[#dce3de]">
             {[
-              [LockKeyhole, 'Sessão autenticada', 'Acesso protegido para administradores, gestores e colaboradores.'],
-              [Building2, 'Dados por empresa', 'Operações de gestão vinculadas à organização do usuário.'],
-              [BadgeCheck, 'Permissões por função', 'Cada endpoint respeita o papel necessário para executar a ação.'],
-            ].map(([Icon, title, text]) => {
-              const FeatureIcon = Icon as typeof LockKeyhole;
+              [KeyRound, 'Acesso individual', 'Cada pessoa entra com sua própria conta.'],
+              [Building2, 'Dados por empresa', 'A gestão permanece vinculada à organização correta.'],
+              [BadgeCheck, 'Permissões por perfil', 'Gestor e colaborador veem ações diferentes.'],
+            ].map(([Icon, title, text], index) => {
+              const FeatureIcon = Icon as typeof KeyRound;
               return (
-                <div key={title as string} className="bg-[#12372a] p-7 sm:p-9">
-                  <FeatureIcon className="h-5 w-5 text-[#e2b45b]" />
-                  <h3 className="mt-4 text-base font-semibold">{title as string}</h3>
-                  <p className="mt-2 text-sm leading-6 text-[#a9bdb3]">{text as string}</p>
-                </div>
+                <Reveal key={title as string} delay={index * 0.07}>
+                  <div className="bg-[#eff3ef] p-7 sm:p-9">
+                    <FeatureIcon className="h-5 w-5 text-[#2F7658]" />
+                    <h3 className="mt-4 text-base font-semibold">{title as string}</h3>
+                    <p className="mt-2 text-sm leading-6 text-[#66736c]">{text as string}</p>
+                  </div>
+                </Reveal>
               );
             })}
           </div>
         </div>
       </section>
 
-      <section className="border-y border-[#d9ddd8] bg-white px-5 py-20 sm:px-8 sm:py-24">
-        <div className="mx-auto flex max-w-[1040px] flex-col items-center text-center">
-          <HeartPulse className="h-7 w-7 text-[#2f7a5c]" />
-          <h2 className="mt-6 max-w-3xl font-display text-4xl leading-[1.08] tracking-[-0.035em] sm:text-5xl">
-            Benefício bom é aquele que cabe na operação e chega até as pessoas.
-          </h2>
-          <p className="mt-5 max-w-2xl text-base leading-7 text-[#66716b]">
-            Comece cadastrando sua empresa. A BNFix organiza o caminho a partir daí.
-          </p>
-          <Link href="/cadastro" className="mt-8 inline-flex h-12 items-center justify-center gap-2 rounded-lg bg-[#194b3a] px-6 text-sm font-semibold text-white hover:bg-[#12372a]">
-            Começar agora
-            <ArrowRight className="h-4 w-4" />
-          </Link>
-        </div>
+      <section className="px-4 pb-24 sm:px-8 sm:pb-32">
+        <Reveal>
+          <div className="relative mx-auto flex max-w-[1120px] flex-col items-center overflow-hidden rounded-3xl bg-[#F2C96D] px-6 py-16 text-center text-[#17352b] sm:px-12 sm:py-20">
+            <motion.div
+              className="absolute -right-16 -top-16 h-48 w-48 rounded-full border border-[#17352b]/15"
+              animate={reduceMotion ? undefined : { scale: [1, 1.08, 1] }}
+              transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
+              aria-hidden="true"
+            />
+            <Sparkles className="h-7 w-7" />
+            <h2 className="mt-6 max-w-3xl font-display text-4xl leading-[1.04] tracking-[-.038em] sm:text-5xl">
+              Menos explicação. Mais gente usando o benefício.
+            </h2>
+            <p className="mt-5 max-w-2xl text-base leading-7 text-[#3d594d]">
+              Cadastre sua empresa e comece pela parte mais simples: deixar claro o que cada
+              pessoa pode fazer.
+            </p>
+            <Link
+              href="/cadastro"
+              className="group mt-8 inline-flex h-13 items-center justify-center gap-2 rounded-xl bg-[#173f32] px-6 text-sm font-semibold text-white hover:bg-[#102e25]"
+            >
+              Cadastrar minha empresa
+              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+            </Link>
+          </div>
+        </Reveal>
       </section>
 
-      <footer className="bg-[#f6f5f1] px-5 py-10 sm:px-8">
+      <footer className="border-t border-[#d7ded8] bg-white px-4 py-10 sm:px-8">
         <div className="mx-auto flex max-w-[1240px] flex-col gap-8 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">
-            <img src="/favicon.png" alt="" className="h-9 w-9 rounded-lg bg-white object-contain p-1 shadow-sm" />
+            <img src="/favicon.png" alt="" className="h-9 w-9 rounded-lg object-contain" />
             <div>
               <div className="text-sm font-semibold">BNFix</div>
-              <div className="text-[11px] text-[#7a857f]">Gestão de benefícios corporativos</div>
+              <div className="mt-0.5 text-[11px] text-[#758078]">
+                Benefícios claros para rotinas reais
+              </div>
             </div>
           </div>
-          <div className="flex flex-wrap gap-x-6 gap-y-3 text-xs text-[#66716b]">
-            <a href="#produto" className="hover:text-[#194b3a]">Produto</a>
-            <a href="#como-funciona" className="hover:text-[#194b3a]">Como funciona</a>
-            <Link href="/entrar" className="hover:text-[#194b3a]">Acessar plataforma</Link>
+          <div className="flex flex-wrap gap-x-6 gap-y-3 text-xs text-[#66736c]">
+            <a href="#produto" className="hover:text-[#173f32]">Produto</a>
+            <a href="#como-funciona" className="hover:text-[#173f32]">Como funciona</a>
+            <a href="#rotinas" className="hover:text-[#173f32]">Para sua rotina</a>
+            <Link href="/entrar" className="hover:text-[#173f32]">Entrar</Link>
           </div>
-          <p className="text-xs text-[#8a948e]">© 2026 BNFix</p>
+          <p className="text-xs text-[#87918b]">© 2026 BNFix</p>
         </div>
       </footer>
     </main>

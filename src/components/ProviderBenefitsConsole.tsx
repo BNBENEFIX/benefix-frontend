@@ -2,9 +2,40 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { BrowserMultiFormatReader, type IScannerControls } from '@zxing/browser';
-import { Camera, Check, CheckCircle2, RefreshCw, ScanLine, X } from 'lucide-react';
+import {
+  AlertTriangle,
+  Camera,
+  Check,
+  CheckCircle2,
+  ChevronDown,
+  Keyboard,
+  Loader2,
+  RefreshCw,
+  RotateCcw,
+  ScanLine,
+  UserRound,
+  X,
+} from 'lucide-react';
 import { sharedBenefitService } from '../services/sharedBenefitService';
 import type { RedemptionPreview, SharedBenefitRequest } from '../types';
+
+type RedemptionState =
+  | 'idle'
+  | 'scanning'
+  | 'checking'
+  | 'ready'
+  | 'confirming'
+  | 'success'
+  | 'error';
+
+interface StatusMessage {
+  title: string;
+  detail: string;
+}
+
+interface RequestMessage extends StatusMessage {
+  kind: 'success' | 'error';
+}
 
 const extractToken = (value: string) => {
   const clean = value.trim();
@@ -16,134 +47,494 @@ const extractToken = (value: string) => {
   }
 };
 
+const getApiMessage = (error: unknown, fallback: string) => {
+  const candidate = error as { response?: { data?: { message?: string } } };
+  return candidate.response?.data?.message ?? fallback;
+};
+
 export function ProviderBenefitsConsole() {
   const [requests, setRequests] = useState<SharedBenefitRequest[]>([]);
+  const [requestsLoading, setRequestsLoading] = useState(true);
+  const [requestBusyId, setRequestBusyId] = useState<number | null>(null);
+  const [requestMessage, setRequestMessage] = useState<RequestMessage | null>(null);
+
   const [token, setToken] = useState('');
   const [preview, setPreview] = useState<RedemptionPreview | null>(null);
-  const [message, setMessage] = useState('');
-  const [busy, setBusy] = useState(false);
-  const [camera, setCamera] = useState(false);
+  const [redemptionState, setRedemptionState] = useState<RedemptionState>('idle');
+  const [redemptionMessage, setRedemptionMessage] = useState<StatusMessage | null>(null);
+  const [manualEntry, setManualEntry] = useState(false);
+
   const videoRef = useRef<HTMLVideoElement>(null);
   const controlsRef = useRef<IScannerControls | null>(null);
+  const decodeLockedRef = useRef(false);
 
-  const load = useCallback(async () => {
-    try { setRequests(await sharedBenefitService.providerRequests()); }
-    catch { setRequests([]); }
+  const stopCamera = useCallback(() => {
+    controlsRef.current?.stop();
+    controlsRef.current = null;
+    decodeLockedRef.current = false;
   }, []);
 
-  useEffect(() => { load(); }, [load]);
-  useEffect(() => () => controlsRef.current?.stop(), []);
-
-  const act = async (id: number, approved: boolean) => {
-    setBusy(true);
+  const loadRequests = useCallback(async () => {
+    setRequestsLoading(true);
     try {
-      if (approved) await sharedBenefitService.approve(id);
-      else await sharedBenefitService.reject(id, 'Solicitação recusada pelo estabelecimento');
-      setMessage(approved ? 'Solicitação aprovada.' : 'Solicitação recusada.');
-      await load();
-    } finally { setBusy(false); }
+      setRequests(await sharedBenefitService.providerRequests());
+    } catch {
+      setRequests([]);
+    } finally {
+      setRequestsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadRequests();
+  }, [loadRequests]);
+
+  useEffect(() => () => stopCamera(), [stopCamera]);
+
+  const resetRedemption = () => {
+    stopCamera();
+    setToken('');
+    setPreview(null);
+    setRedemptionMessage(null);
+    setManualEntry(false);
+    setRedemptionState('idle');
   };
 
-  const previewValue = async (raw = token) => {
+  const actOnRequest = async (request: SharedBenefitRequest, approved: boolean) => {
+    setRequestBusyId(request.id);
+    setRequestMessage(null);
+    try {
+      if (approved) {
+        await sharedBenefitService.approve(request.id);
+      } else {
+        await sharedBenefitService.reject(
+          request.id,
+          'Solicitação recusada pelo estabelecimento',
+        );
+      }
+      setRequestMessage({
+        kind: 'success',
+        title: approved ? 'Solicitação aprovada' : 'Solicitação recusada',
+        detail: approved
+          ? `${request.employeeName} já pode usar ${request.benefitName}.`
+          : `A solicitação de ${request.employeeName} foi recusada.`,
+      });
+      await loadRequests();
+    } catch (error) {
+      setRequestMessage({
+        kind: 'error',
+        title: 'Não foi possível concluir',
+        detail: getApiMessage(error, 'Tente novamente em instantes.'),
+      });
+    } finally {
+      setRequestBusyId(null);
+    }
+  };
+
+  const previewValue = useCallback(async (raw: string) => {
     const parsed = extractToken(raw);
     if (!parsed) return;
-    setBusy(true);
-    setMessage('');
+
+    stopCamera();
+    setToken(parsed);
+    setPreview(null);
+    setRedemptionMessage(null);
+    setRedemptionState('checking');
+
     try {
-      setToken(parsed);
-      setPreview(await sharedBenefitService.previewToken(parsed));
-      controlsRef.current?.stop();
-      setCamera(false);
+      const value = await sharedBenefitService.previewToken(parsed);
+      setPreview(value);
+      setRedemptionState('ready');
     } catch (error) {
-      const candidate = error as { response?: { data?: { message?: string } } };
-      setPreview(null);
-      setMessage(candidate.response?.data?.message ?? 'QR Code inválido ou expirado.');
-    } finally { setBusy(false); }
-  };
+      setRedemptionMessage({
+        title: 'QR Code não aceito',
+        detail: getApiMessage(
+          error,
+          'O código pode ter expirado ou já ter sido utilizado. Peça à pessoa para gerar um novo QR Code.',
+        ),
+      });
+      setRedemptionState('error');
+    }
+  }, [stopCamera]);
 
   const startCamera = async () => {
-    setCamera(true);
-    setMessage('');
+    stopCamera();
+    setManualEntry(false);
+    setPreview(null);
+    setRedemptionMessage(null);
+    setRedemptionState('scanning');
+
     window.setTimeout(async () => {
       if (!videoRef.current) return;
       const reader = new BrowserMultiFormatReader();
+
       try {
-        controlsRef.current = await reader.decodeFromVideoDevice(undefined, videoRef.current, (result) => {
-          if (result) previewValue(result.getText());
-        });
+        controlsRef.current = await reader.decodeFromVideoDevice(
+          undefined,
+          videoRef.current,
+          (result) => {
+            if (!result || decodeLockedRef.current) return;
+            decodeLockedRef.current = true;
+            void previewValue(result.getText());
+          },
+        );
       } catch {
-        setCamera(false);
-        setMessage('Não foi possível acessar a câmera. Cole o código manualmente.');
+        stopCamera();
+        setManualEntry(true);
+        setRedemptionMessage({
+          title: 'A câmera não abriu',
+          detail: 'Confira a permissão da câmera ou digite o código exibido abaixo do QR Code.',
+        });
+        setRedemptionState('error');
       }
     }, 50);
   };
 
   const consume = async () => {
-    setBusy(true);
+    if (!token) return;
+    setRedemptionState('confirming');
+    setRedemptionMessage(null);
+
     try {
       const result = await sharedBenefitService.consumeToken(token);
       setPreview(null);
       setToken('');
-      setMessage(`Benefício “${result.benefitName}” utilizado por ${result.beneficiaryName}.`);
+      setRedemptionMessage({
+        title: 'Uso confirmado',
+        detail: `${result.benefitName} foi utilizado por ${result.beneficiaryName}.`,
+      });
+      setRedemptionState('success');
     } catch (error) {
-      const candidate = error as { response?: { data?: { message?: string } } };
-      setMessage(candidate.response?.data?.message ?? 'Não foi possível concluir o resgate.');
-    } finally { setBusy(false); }
+      setRedemptionMessage({
+        title: 'Não foi possível confirmar',
+        detail: getApiMessage(
+          error,
+          'O QR Code pode ter expirado. Peça à pessoa para gerar um novo código e tente outra vez.',
+        ),
+      });
+      setRedemptionState('error');
+    }
   };
 
+  const isProcessing = redemptionState === 'checking' || redemptionState === 'confirming';
+
   return (
-    <section className="mx-auto max-w-[1240px] px-6 pt-8">
-      <div className="grid gap-5 lg:grid-cols-2">
-        <div className="rounded-xl border border-[#d9ddd8] bg-white p-5">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[.14em] text-[#2f7a5c]">Compartilhamento</p>
-              <h2 className="mt-2 text-xl font-semibold text-[#17201c]">Solicitações recebidas</h2>
-            </div>
-            <button onClick={load} className="rounded-lg p-2 text-[#66716b] hover:bg-[#f0f2ef]" aria-label="Atualizar solicitações"><RefreshCw className="h-4 w-4" /></button>
-          </div>
-          <div className="mt-5 divide-y divide-[#edf0ec]">
-            {requests.length === 0 ? <p className="py-6 text-sm text-[#66716b]">Nenhuma solicitação pendente.</p> : requests.map((request) => (
-              <div key={request.id} className="flex items-center justify-between gap-4 py-4">
-                <div>
-                  <div className="text-sm font-semibold text-[#17201c]">{request.benefitName}</div>
-                  <div className="mt-1 text-xs text-[#7a857f]">{request.employeeName} · {request.employeeCompanyName}</div>
+    <section className="mx-auto max-w-[1180px] px-4 pt-6 sm:px-6 sm:pt-8">
+      <div className="overflow-hidden rounded-2xl border border-[#cdd8d1] bg-[#173f32] text-white shadow-[0_18px_50px_rgba(23,63,50,.14)]">
+        <div className="grid lg:grid-cols-[minmax(0,1.05fr)_minmax(360px,.95fr)]">
+          <div className="p-6 sm:p-8 lg:p-10">
+            <p className="text-xs font-semibold uppercase tracking-[.14em] text-[#b8d4c6]">
+              Confirmar uso
+            </p>
+            <h1 className="mt-3 max-w-xl font-display text-3xl leading-tight tracking-[-.03em] sm:text-4xl">
+              Leia o QR Code apresentado pela pessoa
+            </h1>
+            <p className="mt-3 max-w-xl text-sm leading-6 text-[#c8dbd1]">
+              A confirmação só acontece depois que você conferir o benefício e tocar em
+              “Confirmar uso”.
+            </p>
+
+            {redemptionState === 'idle' && (
+              <div className="mt-8">
+                <button
+                  type="button"
+                  onClick={startCamera}
+                  className="flex h-14 w-full max-w-md items-center justify-center gap-3 rounded-xl bg-white px-5 text-base font-semibold text-[#173f32] hover:bg-[#edf5f0]"
+                >
+                  <Camera className="h-5 w-5" />
+                  Abrir câmera para ler QR Code
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setManualEntry((current) => !current)}
+                  className="mt-3 inline-flex min-h-11 items-center gap-2 rounded-lg px-2 text-sm font-medium text-[#c8dbd1] hover:text-white"
+                >
+                  <Keyboard className="h-4 w-4" />
+                  Digitar código manualmente
+                  <ChevronDown className={`h-4 w-4 transition-transform ${manualEntry ? 'rotate-180' : ''}`} />
+                </button>
+              </div>
+            )}
+
+            {redemptionState === 'scanning' && (
+              <div className="mt-7 overflow-hidden rounded-xl border border-white/20 bg-black">
+                <div className="relative aspect-[4/3] sm:aspect-video">
+                  <video
+                    ref={videoRef}
+                    className="h-full w-full object-cover"
+                    muted
+                    playsInline
+                  />
+                  <div className="pointer-events-none absolute inset-5 rounded-xl border-2 border-white/80 shadow-[0_0_0_999px_rgba(0,0,0,.28)]" />
+                  <div className="absolute inset-x-0 bottom-4 text-center">
+                    <span className="rounded-full bg-black/65 px-3 py-1.5 text-xs font-semibold">
+                      Aponte para o QR Code
+                    </span>
+                  </div>
                 </div>
-                <div className="flex gap-2">
-                  <button disabled={busy} onClick={() => act(request.id, false)} className="rounded-lg border border-[#d8b5b0] p-2 text-[#a33f35]" aria-label="Recusar"><X className="h-4 w-4" /></button>
-                  <button disabled={busy} onClick={() => act(request.id, true)} className="rounded-lg bg-[#194b3a] p-2 text-white" aria-label="Aprovar"><Check className="h-4 w-4" /></button>
+                <button
+                  type="button"
+                  onClick={resetRedemption}
+                  className="flex h-12 w-full items-center justify-center gap-2 bg-[#102e25] text-sm font-semibold hover:bg-[#0d281f]"
+                >
+                  <X className="h-4 w-4" />
+                  Fechar câmera
+                </button>
+              </div>
+            )}
+
+            {(isProcessing) && (
+              <div
+                role="status"
+                className="mt-8 flex min-h-52 flex-col items-center justify-center rounded-xl bg-white p-6 text-center text-[#18211d]"
+              >
+                <Loader2 className="h-10 w-10 animate-spin text-[#2f7658]" />
+                <h2 className="mt-5 text-xl font-semibold">
+                  {redemptionState === 'checking' ? 'Conferindo QR Code' : 'Confirmando uso'}
+                </h2>
+                <p className="mt-2 text-sm text-[#627068]">
+                  Aguarde. Não feche esta tela.
+                </p>
+              </div>
+            )}
+
+            {redemptionState === 'ready' && preview && (
+              <div className="mt-8 rounded-xl bg-white p-5 text-[#18211d] sm:p-6">
+                <div className="flex items-center gap-3 text-[#2f7658]">
+                  <CheckCircle2 className="h-6 w-6" />
+                  <h2 className="text-lg font-semibold">QR Code válido</h2>
+                </div>
+                <dl className="mt-5 grid gap-4 border-y border-[#e3e8e4] py-5 sm:grid-cols-2">
+                  <div>
+                    <dt className="text-xs font-medium text-[#6d7972]">Benefício</dt>
+                    <dd className="mt-1 text-base font-semibold">{preview.benefitName}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs font-medium text-[#6d7972]">Pessoa</dt>
+                    <dd className="mt-1 flex items-center gap-2 text-base font-semibold">
+                      <UserRound className="h-4 w-4 text-[#2f7658]" />
+                      {preview.beneficiaryName}
+                    </dd>
+                  </div>
+                </dl>
+                <p className="mt-4 text-sm leading-6 text-[#536159]">
+                  Confira os dados antes de confirmar. Esta ação registra o uso do benefício.
+                </p>
+                <div className="mt-5 grid gap-3 sm:grid-cols-[1fr_auto]">
+                  <button
+                    type="button"
+                    onClick={consume}
+                    className="flex h-12 items-center justify-center gap-2 rounded-xl bg-[#173f32] px-5 text-sm font-semibold text-white hover:bg-[#102e25]"
+                  >
+                    <ScanLine className="h-5 w-5" />
+                    Confirmar uso
+                  </button>
+                  <button
+                    type="button"
+                    onClick={resetRedemption}
+                    className="h-12 rounded-xl border border-[#cfd8d2] px-5 text-sm font-semibold text-[#536159] hover:bg-[#f3f6f3]"
+                  >
+                    Cancelar
+                  </button>
                 </div>
               </div>
-            ))}
+            )}
+
+            {redemptionState === 'success' && redemptionMessage && (
+              <div
+                role="status"
+                className="mt-8 flex min-h-64 flex-col items-center justify-center rounded-xl bg-[#edf8f1] p-6 text-center text-[#173f32]"
+              >
+                <span className="flex h-16 w-16 items-center justify-center rounded-full bg-[#2f7658] text-white">
+                  <Check className="h-9 w-9" strokeWidth={3} />
+                </span>
+                <h2 className="mt-5 text-2xl font-semibold">{redemptionMessage.title}</h2>
+                <p className="mt-2 max-w-md text-sm leading-6 text-[#4e675b]">
+                  {redemptionMessage.detail}
+                </p>
+                <button
+                  type="button"
+                  onClick={resetRedemption}
+                  className="mt-6 flex h-12 items-center justify-center gap-2 rounded-xl bg-[#173f32] px-6 text-sm font-semibold text-white"
+                >
+                  <RotateCcw className="h-4 w-4" />
+                  Validar outro benefício
+                </button>
+              </div>
+            )}
+
+            {redemptionState === 'error' && redemptionMessage && (
+              <div
+                role="alert"
+                className="mt-8 rounded-xl border border-[#f1c5bf] bg-[#fff1ef] p-5 text-[#762d28]"
+              >
+                <div className="flex gap-3">
+                  <AlertTriangle className="mt-0.5 h-6 w-6 shrink-0 text-[#b4473d]" />
+                  <div>
+                    <h2 className="text-lg font-semibold">{redemptionMessage.title}</h2>
+                    <p className="mt-2 text-sm leading-6 text-[#8f4740]">
+                      {redemptionMessage.detail}
+                    </p>
+                  </div>
+                </div>
+                <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                  <button
+                    type="button"
+                    onClick={startCamera}
+                    className="flex h-12 items-center justify-center gap-2 rounded-xl bg-[#b4473d] px-4 text-sm font-semibold text-white"
+                  >
+                    <Camera className="h-4 w-4" />
+                    Tentar novamente
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setManualEntry(true)}
+                    className="flex h-12 items-center justify-center gap-2 rounded-xl border border-[#dbaaa4] bg-white px-4 text-sm font-semibold"
+                  >
+                    <Keyboard className="h-4 w-4" />
+                    Digitar código
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {manualEntry && (redemptionState === 'idle' || redemptionState === 'error') && (
+              <form
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  void previewValue(token);
+                }}
+                className="mt-5 rounded-xl border border-white/15 bg-white/10 p-4"
+              >
+                <label htmlFor="redemption-code" className="text-sm font-semibold">
+                  Código exibido abaixo do QR Code
+                </label>
+                <div className="mt-3 grid gap-2 sm:grid-cols-[1fr_auto]">
+                  <input
+                    id="redemption-code"
+                    value={token}
+                    onChange={(event) => setToken(event.target.value)}
+                    placeholder="Digite ou cole o código"
+                    autoComplete="off"
+                    className="h-12 min-w-0 rounded-lg border border-white/20 bg-white px-3 text-sm text-[#18211d] placeholder:text-[#8a958f]"
+                  />
+                  <button
+                    type="submit"
+                    disabled={!token.trim() || isProcessing}
+                    className="h-12 rounded-lg bg-white px-5 text-sm font-semibold text-[#173f32] disabled:opacity-50"
+                  >
+                    Conferir código
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
+
+          <aside className="border-t border-white/10 bg-[#102f25] p-6 sm:p-8 lg:border-l lg:border-t-0">
+            <p className="text-xs font-semibold uppercase tracking-[.14em] text-[#9fc4b2]">
+              Como funciona
+            </p>
+            <ol className="mt-6 space-y-6">
+              {[
+                ['1', 'Abra a câmera', 'Permita o acesso quando o celular solicitar.'],
+                ['2', 'Leia o QR Code', 'Confira o benefício e o nome da pessoa.'],
+                ['3', 'Confirme o uso', 'Só então o benefício será registrado como utilizado.'],
+              ].map(([number, title, detail]) => (
+                <li key={number} className="flex gap-4">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/25 text-sm font-semibold">
+                    {number}
+                  </span>
+                  <div>
+                    <div className="text-sm font-semibold">{title}</div>
+                    <div className="mt-1 text-xs leading-5 text-[#b8cec3]">{detail}</div>
+                  </div>
+                </li>
+              ))}
+            </ol>
+          </aside>
+        </div>
+      </div>
+
+      <div className="mt-8 rounded-2xl border border-[#d5ddd8] bg-white p-5 text-[#18211d] sm:p-6">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[.14em] text-[#2f7658]">
+              Acessos pendentes
+            </p>
+            <h2 className="mt-2 text-xl font-semibold">Solicitações recebidas</h2>
+            <p className="mt-1 text-sm text-[#68746d]">
+              Aprove para liberar um benefício ou recuse quando o pedido não se aplicar.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={loadRequests}
+            className="flex h-10 shrink-0 items-center gap-2 rounded-lg border border-[#d5ddd8] px-3 text-xs font-semibold text-[#536159] hover:bg-[#f3f6f3]"
+          >
+            <RefreshCw className={`h-4 w-4 ${requestsLoading ? 'animate-spin' : ''}`} />
+            <span className="hidden sm:inline">Atualizar</span>
+          </button>
         </div>
 
-        <div className="rounded-xl border border-[#d9ddd8] bg-[#12372a] p-5 text-white">
-          <p className="text-xs font-semibold uppercase tracking-[.14em] text-[#a9c8b8]">Estabelecimento</p>
-          <h2 className="mt-2 text-xl font-semibold">Validar benefício</h2>
-          <p className="mt-2 text-xs leading-5 text-[#b9ccc2]">Leia o QR Code apresentado pelo usuário ou cole o token abaixo.</p>
-
-          {camera && <video ref={videoRef} className="mt-4 aspect-video w-full rounded-lg bg-black object-cover" muted playsInline />}
-
-          <div className="mt-5 flex gap-2">
-            <input value={token} onChange={(event) => setToken(event.target.value)} placeholder="Cole o token ou URL do QR Code" className="h-11 min-w-0 flex-1 rounded-lg border border-white/15 bg-white/10 px-3 text-xs text-white placeholder:text-white/40" />
-            <button onClick={() => previewValue()} disabled={busy || !token.trim()} className="rounded-lg bg-[#d8a84e] px-4 text-xs font-semibold text-[#183128] disabled:opacity-50">Validar</button>
+        {requestMessage && (
+          <div
+            role={requestMessage.kind === 'error' ? 'alert' : 'status'}
+            className={`mt-5 rounded-lg border px-4 py-3 ${
+              requestMessage.kind === 'error'
+                ? 'border-[#efc2bc] bg-[#fff1ef] text-[#8f3730]'
+                : 'border-[#b9d7c6] bg-[#eef5f0] text-[#235c46]'
+            }`}
+          >
+            <div className="text-sm font-semibold">{requestMessage.title}</div>
+            <div className="mt-1 text-xs opacity-85">{requestMessage.detail}</div>
           </div>
-          <button onClick={camera ? () => { controlsRef.current?.stop(); setCamera(false); } : startCamera} className="mt-3 flex h-10 w-full items-center justify-center gap-2 rounded-lg border border-white/20 text-xs font-semibold hover:bg-white/10">
-            {camera ? <X className="h-4 w-4" /> : <Camera className="h-4 w-4" />} {camera ? 'Fechar câmera' : 'Ler com a câmera'}
-          </button>
+        )}
 
-          {preview && (
-            <div className="mt-5 rounded-lg bg-white p-4 text-[#17201c]">
-              <div className="flex items-center gap-2 text-sm font-semibold text-[#23664e]"><CheckCircle2 className="h-4 w-4" /> Código válido</div>
-              <div className="mt-3 text-base font-semibold">{preview.benefitName}</div>
-              <div className="mt-1 text-xs text-[#66716b]">Usuário: {preview.beneficiaryName}</div>
-              <button onClick={consume} disabled={busy} className="mt-4 flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-[#194b3a] text-xs font-semibold text-white">
-                <ScanLine className="h-4 w-4" /> Confirmar utilização
-              </button>
+        <div className="mt-5 divide-y divide-[#edf0ed]">
+          {requestsLoading ? (
+            <div role="status" className="flex items-center gap-3 py-8 text-sm text-[#68746d]">
+              <Loader2 className="h-5 w-5 animate-spin text-[#2f7658]" />
+              Carregando solicitações...
             </div>
+          ) : requests.length === 0 ? (
+            <div className="py-8">
+              <p className="text-sm font-semibold">Nenhuma solicitação pendente</p>
+              <p className="mt-1 text-sm text-[#68746d]">Novos pedidos aparecerão aqui.</p>
+            </div>
+          ) : (
+            requests.map((request) => (
+              <div
+                key={request.id}
+                className="grid gap-4 py-5 sm:grid-cols-[1fr_auto] sm:items-center"
+              >
+                <div>
+                  <div className="text-base font-semibold">{request.benefitName}</div>
+                  <div className="mt-1 text-sm text-[#68746d]">
+                    {request.employeeName} · {request.employeeCompanyName}
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    disabled={requestBusyId !== null}
+                    onClick={() => actOnRequest(request, false)}
+                    className="h-11 rounded-lg border border-[#dfb9b4] px-4 text-sm font-semibold text-[#9d3d35] disabled:opacity-50"
+                  >
+                    Recusar
+                  </button>
+                  <button
+                    type="button"
+                    disabled={requestBusyId !== null}
+                    onClick={() => actOnRequest(request, true)}
+                    className="flex h-11 items-center justify-center gap-2 rounded-lg bg-[#173f32] px-4 text-sm font-semibold text-white disabled:opacity-50"
+                  >
+                    {requestBusyId === request.id && <Loader2 className="h-4 w-4 animate-spin" />}
+                    Aprovar
+                  </button>
+                </div>
+              </div>
+            ))
           )}
-          {message && <p role="status" className="mt-4 text-xs leading-5 text-[#e8d39f]">{message}</p>}
         </div>
       </div>
     </section>

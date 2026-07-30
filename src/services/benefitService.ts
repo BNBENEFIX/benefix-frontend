@@ -23,9 +23,14 @@ interface BackendTenantBenefit {
   id: number;
   benefitId?: number;
   benefitName: string;
+  description?: string;
   nameProvider?: string;
   categoryId?: number;
+  categories?: Array<{ id: number; name: string }>;
   status: boolean;
+  validUntil?: string;
+  maxUsesPerUser?: number;
+  terms?: string;
   createdAt?: string;
 }
 
@@ -33,14 +38,16 @@ interface BackendTenantBenefit {
 
 const CATEGORY_MAP: Record<number, BenefitCategory> = {
   0: 'Saúde',
-  1: 'Educação',
-  2: 'Alimentação',
-  3: 'Transporte',
-  4: 'Lazer',
-  5: 'Bem-estar',
+  1: 'Saúde',
+  2: 'Educação',
+  3: 'Alimentação',
+  4: 'Transporte',
+  5: 'Lazer',
+  6: 'Bem-estar',
 };
 
-const resolveCategoryName = (categoryId?: number): BenefitCategory => {
+const resolveCategoryName = (categoryId?: number, categoryName?: string): BenefitCategory => {
+  if (categoryName) return categoryName as BenefitCategory;
   if (categoryId == null) return 'Saúde';
   return CATEGORY_MAP[categoryId] ?? 'Saúde';
 };
@@ -52,7 +59,7 @@ const mapBenefit = (b: BackendBenefit): Benefit => ({
   backendId:    b.id,
   name:         b.name ?? b.benefitName ?? 'Sem nome',
   description:  b.description ?? (b as any).nameProvider ?? '',
-  category:     resolveCategoryName((b as any).categoryId),
+  category:     resolveCategoryName(b.categories?.[0]?.id, b.categories?.[0]?.name),
   supplierId:   String(b.companyId ?? ''),
   supplierName: b.companyName ?? b.nameProvider ?? 'Fornecedor',
   rating:       0,
@@ -70,18 +77,22 @@ const mapTenantBenefit = (b: BackendTenantBenefit): Benefit => ({
   id:           String(b.benefitId ?? b.id),
   backendId:    b.benefitId ?? b.id,
   name:         b.benefitName,
-  description:  b.nameProvider ?? 'Benefício do tenant',
-  category:     resolveCategoryName(b.categoryId),
+  description:  b.description ?? '',
+  category:     resolveCategoryName(
+    b.categories?.[0]?.id ?? b.categoryId,
+    b.categories?.[0]?.name,
+  ),
   supplierId:   String(b.id),
   supplierName: b.nameProvider ?? 'Tenant',
   rating:       0,
   ratingCount:  0,
   imageUrl:     'https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=500',
-  details:      b.nameProvider ?? 'Benefício do tenant',
+  details:      b.description ?? '',
   status:       b.status ? 'Ativo' : 'Suspenso',
   companyId:    undefined,
   active:       b.status,
   providerName: b.nameProvider ?? 'Tenant',
+  rules:        b.terms,
 });
 
 // ── Service ──────────────────────────────────────────────────────────────────

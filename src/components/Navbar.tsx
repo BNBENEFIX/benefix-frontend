@@ -1,95 +1,72 @@
 import React from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
-import { Sun, Moon, LogOut, Trophy } from 'lucide-react';
+import { Sun, Moon, LogOut } from 'lucide-react';
 
 export const Navbar: React.FC = () => {
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
 
-  const getRoleColor = (role: string) => {
-    switch (role) {
-      case 'ADMIN': return 'bg-amber-500 text-white';
-      case 'SUPPLIER': return 'bg-indigo-500 text-white';
-      case 'COMPANY': return 'bg-blue-500 text-white';
-      default: return 'bg-emerald-500 text-white';
-    }
-  };
-
   const getRoleNamePT = (role: string) => {
     switch (role) {
-      case 'ADMIN': return 'ADMIN PLATAFORMA';
-      case 'SUPPLIER': return 'FORNECEDOR';
-      case 'COMPANY': return 'GESTOR RH';
-      default: return 'COLABORADOR';
+      case 'ADMIN': return 'Administrador';
+      case 'SUPPLIER': return 'Fornecedor';
+      case 'COMPANY': return 'Gestor';
+      default: return 'Colaborador';
     }
   };
 
   return (
-    <nav className="sticky top-0 z-50 border-b border-slate-200 dark:border-slate-800 bg-white/85 dark:bg-slate-900/85 backdrop-blur-md px-6 py-4 shadow-sm transition-colors">
-      <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
-        
-        {/* Brand Logo */}
-        <a href="/" className="flex items-center gap-2 group">
+    <nav className="sticky top-0 z-50 border-b border-[#d8dfda] bg-white/95 px-4 py-3 backdrop-blur-md transition-colors dark:border-slate-800 dark:bg-slate-900/95 sm:px-6">
+      <div className="mx-auto flex max-w-[1180px] items-center justify-between gap-4">
+        <div className="flex items-center gap-2.5">
           <img
             src="/favicon.png"
             alt="BNFix"
-            className="w-11 h-11 rounded-xl object-contain group-hover:scale-105 transition-transform"
+            className="h-10 w-10 rounded-lg object-contain"
           />
-          <div className="flex flex-col">
-            <span className="font-display font-bold text-lg text-slate-800 dark:text-neutral-50 tracking-tight leading-none">BNFix</span>
-            <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">Benefícios Corporativos</span>
+          <div>
+            <span className="block text-base font-semibold leading-none text-[#18211d] dark:text-white">BNFix</span>
+            <span className="mt-1 block text-[11px] text-[#68746d] dark:text-slate-400">
+              Benefícios corporativos
+            </span>
           </div>
-        </a>
+        </div>
 
-        {/* Desktop Controls */}
-        <div className="flex items-center gap-4">
-
-          {/* Theme Toggler */}
+        <div className="flex items-center gap-2 sm:gap-3">
           <button
             onClick={toggleTheme}
-            className="p-2 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-all cursor-pointer"
-            aria-label="Alternar Tema"
+            className="rounded-lg p-2 text-[#68746d] hover:bg-[#f0f3ef] dark:text-slate-400 dark:hover:bg-slate-800"
+            aria-label="Alternar tema"
           >
-            {theme === 'light' ? <Moon className="w-5 h-5 text-indigo-500" /> : <Sun className="w-5 h-5 text-amber-500" />}
+            {theme === 'light'
+              ? <Moon className="h-5 w-5" />
+              : <Sun className="h-5 w-5" />}
           </button>
 
-          {/* Score tracker for Employee role */}
-          {user?.role === 'EMPLOYEE' && user.score !== undefined && (
-            <div className="hidden sm:flex items-center gap-1.5 bg-amber-50 dark:bg-amber-950/20 px-3 py-1.5 rounded-xl border border-amber-100 dark:border-amber-900/30">
-              <Trophy className="w-4 h-4 text-amber-500 animate-bounce" />
-              <div className="flex flex-col text-left">
-                <span className="text-[10px] font-bold text-slate-400 uppercase leading-none">Nível {user.level}</span>
-                <span className="text-xs font-extrabold text-amber-600 dark:text-amber-400 leading-none mt-0.5">{user.score} pts</span>
-              </div>
-            </div>
-          )}
-
-          {/* User badge */}
           {user && (
-            <div className="flex items-center gap-3 pl-2 border-l border-slate-200 dark:border-slate-800">
-              <img
-                src={user.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100'}
-                alt={user.name}
-                className="w-9 h-9 rounded-full object-cover ring-2 ring-emerald-500/20"
-              />
-              <div className="hidden lg:flex flex-col text-left">
-                <span className="text-xs font-bold text-slate-800 dark:text-slate-100">{user.name}</span>
-                <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-md mt-0.5 tracking-wider self-start ${getRoleColor(user.role)}`}>
+            <div className="flex items-center gap-2 border-l border-[#d8dfda] pl-3 dark:border-slate-800">
+              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#e7efe9] text-sm font-semibold text-[#173f32] dark:bg-slate-800 dark:text-slate-100">
+                {user.name?.charAt(0).toUpperCase()}
+              </span>
+              <div className="hidden text-left md:block">
+                <span className="block max-w-40 truncate text-sm font-semibold text-[#26342d] dark:text-slate-100">
+                  {user.name}
+                </span>
+                <span className="mt-0.5 block text-xs text-[#68746d] dark:text-slate-400">
                   {getRoleNamePT(user.role)}
                 </span>
               </div>
-              
               <button
                 onClick={logout}
-                className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-all ml-1 shrink-0 cursor-pointer"
-                title="Desconectar"
+                className="ml-1 flex h-9 items-center gap-2 rounded-lg px-2 text-[#68746d] hover:bg-[#fff1ef] hover:text-[#a33f35] dark:text-slate-400"
+                aria-label="Sair da conta"
               >
-                <LogOut className="w-4.5 h-4.5" />
+                <LogOut className="h-4 w-4" />
+                <span className="hidden text-sm font-medium sm:inline">Sair</span>
               </button>
             </div>
           )}
-
         </div>
       </div>
     </nav>

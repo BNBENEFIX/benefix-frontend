@@ -2,9 +2,6 @@ import React, { useState } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { Navbar } from './components/Navbar';
-import { Footer } from './components/Footer';
-import { ChatbotWidget } from './components/ChatbotWidget';
-import { LandingPage } from './screens/LandingPage';
 import { LoginPage } from './screens/LoginPage';
 import { RegisterPage } from './screens/RegisterPage';
 import { DashboardAdmin } from './screens/DashboardAdmin';
@@ -13,15 +10,15 @@ import { DashboardRH } from './screens/DashboardRH';
 import { SharedBenefitsHub } from './screens/SharedBenefitsHub';
 import { BenefitsCatalog } from './screens/BenefitsCatalog';
 import { ProviderBenefitsConsole } from './components/ProviderBenefitsConsole';
-import { LayoutDashboard, ShoppingBag, Globe, Loader2 } from 'lucide-react';
+import { LayoutDashboard, ShoppingBag, Loader2 } from 'lucide-react';
 
 // ── Conteúdo principal (autenticado) ─────────────────────────────────────────
 
 const AuthenticatedApp: React.FC = () => {
   const { user } = useAuth();
   const isEmployee = user?.role === 'EMPLOYEE';
-  const [activeTab, setActiveTab] = useState<'landing' | 'catalog' | 'dashboard'>(
-    isEmployee ? 'dashboard' : 'landing',
+  const [activeTab, setActiveTab] = useState<'catalog' | 'dashboard'>(
+    isEmployee ? 'catalog' : 'dashboard',
   );
 
   const renderDashboard = () => {
@@ -37,50 +34,43 @@ const AuthenticatedApp: React.FC = () => {
 
   const tabClass = (tab: typeof activeTab) =>
     activeTab === tab
-      ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/15'
-      : 'hover:bg-slate-800/50 hover:text-white dark:hover:bg-slate-800/50 text-slate-400';
+      ? 'bg-[#173f32] text-white'
+      : 'text-[#68746d] hover:bg-[#edf2ee] hover:text-[#173f32] dark:text-slate-300 dark:hover:bg-slate-800';
 
   return (
     <div className="flex flex-col min-h-screen bg-app transition-colors">
       <Navbar />
 
-      {/* Barra de navegação entre áreas */}
-      <div className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 py-3 px-6 shadow-sm transition-colors">
-        <div className="max-w-7xl mx-auto flex items-center justify-end gap-2 text-xs font-bold">
-          <button
-            onClick={() => setActiveTab('landing')}
-            className={`p-2 px-4 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 ${tabClass('landing')}`}
-          >
-            <Globe className="w-4 h-4" />
-            <span>Início</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('catalog')}
-            className={`p-2 px-4 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 ${tabClass('catalog')}`}
-          >
-            <ShoppingBag className="w-4 h-4" />
-            <span>{isEmployee ? 'Benefícios' : 'Catálogo'}</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('dashboard')}
-            className={`p-2 px-4 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 ${tabClass('dashboard')}`}
-          >
-            <LayoutDashboard className="w-4 h-4" />
-            <span>Meu Painel</span>
-          </button>
+      {/* O colaborador tem uma única jornada; esconder abas duplicadas reduz
+          decisões antes da ação principal "Mostrar QR Code". */}
+      {!isEmployee && (
+        <div className="border-b border-[#d8dfda] bg-white px-4 py-3 dark:border-slate-800 dark:bg-slate-900 sm:px-6">
+          <div className="mx-auto flex max-w-[1180px] items-center gap-2 text-sm font-semibold">
+            <button
+              onClick={() => setActiveTab('dashboard')}
+              className={`flex h-10 items-center gap-2 rounded-lg px-4 transition-colors ${tabClass('dashboard')}`}
+            >
+              <LayoutDashboard className="h-4 w-4" />
+              <span>Painel</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('catalog')}
+              className={`flex h-10 items-center gap-2 rounded-lg px-4 transition-colors ${tabClass('catalog')}`}
+            >
+              <ShoppingBag className="h-4 w-4" />
+              <span>{user?.role === 'COMPANY' ? 'Benefícios' : 'Catálogo'}</span>
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
-      <main className="flex-1 bg-slate-50/50 dark:bg-slate-950/20 transition-colors">
-        {activeTab === 'landing'    && <LandingPage onNavigateToDashboardByRole={() => setActiveTab('catalog')} />}
-        {activeTab === 'catalog'    && (isEmployee ? <SharedBenefitsHub /> : <BenefitsCatalog />)}
-        {activeTab === 'dashboard'  && renderDashboard()}
+      <main className="flex-1 bg-[#f5f6f2] dark:bg-slate-950/20 transition-colors">
+        {isEmployee
+          ? <SharedBenefitsHub />
+          : activeTab === 'catalog'
+            ? <BenefitsCatalog />
+            : renderDashboard()}
       </main>
-
-      <ChatbotWidget />
-      <Footer />
     </div>
   );
 };
