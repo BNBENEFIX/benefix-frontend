@@ -10,28 +10,33 @@
     "lint": "tsc --noEmit"
   },
   "dependencies": {
-    "@google/genai": "^2.4.0",
-    "@tailwindcss/postcss": "^4.1.14",
-    "@tanstack/react-query": "^5.100.14",
+    "@google/genai": "^2.15.0",
+    "@tailwindcss/postcss": "^4.3.3",
+    "@tanstack/react-query": "^5.101.4",
     "@zxing/browser": "^0.2.1",
-    "axios": "^1.16.1",
+    "axios": "^1.19.0",
     "dotenv": "^17.2.3",
     "lucide-react": "^0.546.0",
-    "motion": "^12.23.24",
-    "next": "^16.0.0",
+    "motion": "^12.43.0",
+    "next": "^16.2.12",
     "qrcode.react": "^4.2.0",
-    "react": "^19.0.1",
-    "react-dom": "^19.0.1",
-    "react-hook-form": "^7.77.0",
-    "recharts": "^3.8.1",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "react-hook-form": "^7.83.0",
+    "recharts": "^3.10.1",
     "zod": "^4.4.3"
   },
   "devDependencies": {
-    "@types/node": "^22.14.0",
-    "@types/react": "19.2.17",
-    "@types/react-dom": "^19.2.3",
-    "autoprefixer": "^10.4.21",
-    "tailwindcss": "^4.1.14",
+    "@types/node": "^22.20.1",
+    "@types/react": "19.2.18",
+    "@types/react-dom": "^19.2.4",
+    "autoprefixer": "^10.5.4",
+    "tailwindcss": "^4.3.3",
     "typescript": "~5.8.2"
+  },
+  "overrides": {
+    "postcss": "8.5.25",
+    "protobufjs": "7.6.5",
+    "sharp": "0.35.3"
   }
 }
