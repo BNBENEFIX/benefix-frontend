@@ -17,6 +17,8 @@ export interface LoginRequest {
 
 export interface LoginResponse {
   token: string;
+  accessToken?: string;
+  access_token?: string;
   /** Campo retornado pelo backend — pode variar; tratar com fallback */
   role?: BackendRole;
   /** Algumas implementações retornam o objeto do usuário junto */

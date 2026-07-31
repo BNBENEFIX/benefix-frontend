@@ -79,34 +79,15 @@ export const login = async (
   email: string,
   password: string,
 ): Promise<{ user: User; token: string }> => {
-  console.group('[Auth] Tentativa de login');
-  console.log('[Auth] Email:', email);
-
   const payload: LoginRequest = { email, password };
-  let response: any;
-
-  try {
-    response = await bnfixApi.post<LoginResponse>('/auth/login', payload);
-  } catch (err: any) {
-    console.error('[Auth] Requisição FALHOU');
-    console.error('[Auth] Status HTTP:', err?.response?.status);
-    console.error('[Auth] Body do erro:', JSON.stringify(err?.response?.data, null, 2));
-    console.groupEnd();
-    throw err;
-  }
-
-  console.log('[Auth] Status HTTP:', response.status);
-  console.log('[Auth] Headers da resposta:', JSON.stringify(response.headers, null, 2));
-  console.log('[Auth] Body da resposta:', JSON.stringify(response.data, null, 2));
+  const response = await bnfixApi.post<LoginResponse>('/auth/login', payload);
 
   const { data } = response;
 
   let token: string =
     typeof data === 'string'
       ? data
-      : (data as any).token ?? (data as any).accessToken ?? (data as any).access_token ?? '';
-
-  console.log('[Auth] Token extraído do body:', token ? `${token.slice(0, 40)}...` : '(vazio)');
+      : data.token ?? data.accessToken ?? data.access_token ?? '';
 
   // Fallback útil apenas em ambientes server-side; browsers não expõem Set-Cookie.
   if (!token) {
@@ -114,29 +95,14 @@ export const login = async (
     const cookieStr = Array.isArray(setCookieHeader)
       ? setCookieHeader.join('; ')
       : (setCookieHeader ?? '');
-    console.log('[Auth] Set-Cookie header:', cookieStr || '(ausente)');
     const match = cookieStr.match(/(?:^|;\s*)jwt=([^;]+)/i);
     if (match) {
       token = match[1];
-      console.log('[Auth] Token extraído do Set-Cookie:', `${token.slice(0, 40)}...`);
     }
   }
 
   if (!token) {
-    console.error('[Auth] Nenhum token encontrado no body nem no Set-Cookie');
-    console.groupEnd();
     throw new Error('Token não retornado pelo servidor. Verifique as credenciais.');
-  }
-
-  // Decodifica e loga o payload do JWT para inspecionar claims
-  try {
-    const parts = token.split('.');
-    if (parts.length === 3) {
-      const jwtPayload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
-      console.log('[Auth] JWT payload decodificado:', JSON.stringify(jwtPayload, null, 2));
-    }
-  } catch {
-    console.warn('[Auth] Não foi possível decodificar o JWT');
   }
 
   setToken(token);
@@ -149,9 +115,6 @@ export const login = async (
     score: 0,
     level: 'Bronze',
   };
-
-  console.log('[Auth] Usuário construído:', JSON.stringify(user, null, 2));
-  console.groupEnd();
 
   localStorage.setItem(USER_KEY, JSON.stringify(user));
   return { user, token };

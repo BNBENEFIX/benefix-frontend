@@ -37,30 +37,23 @@ bnfixApi.interceptors.request.use((config: InternalAxiosRequestConfig) => {
     config.headers['Authorization'] = `Bearer ${token}`;
     // NÃO setar config.headers['Cookie'] — header proibido em browsers
   }
-  console.log(`[bnfixApi →] ${config.method?.toUpperCase()} ${config.baseURL}${config.url}`, {
-    hasToken: !!token && !isLoginRequest,
-    body: config.data ? (() => { try { return JSON.parse(config.data); } catch { return config.data; } })() : undefined,
-  });
   return config;
 });
 
 // ── Response interceptor: tratamento centralizado de erros ───────────────────
 
 bnfixApi.interceptors.response.use(
-  (response) => {
-    console.log(`[bnfixApi ←] ${response.status} ${response.config.url}`);
-    return response;
-  },
+  (response) => response,
   (error: AxiosError) => {
     if (error.response) {
       const { status } = error.response;
-      console.error(`[bnfixApi ←] ERRO ${status} ${error.config?.url}`, error.response.data);
+      const requestPath = error.config?.url?.split('?')[0].replace(/\/+$/, '');
 
-      if (status === 403) {
-        console.warn('[BNFix API] Acesso negado — role insuficiente para este recurso.');
+      // Uma sessão rejeitada não deve continuar presa no navegador. O login
+      // fica de fora para preservar a mensagem de credenciais incorretas.
+      if (status === 401 && requestPath !== '/auth/login') {
+        clearToken();
       }
-    } else {
-      console.error('[bnfixApi] Sem resposta do servidor:', error.message);
     }
 
     return Promise.reject(error);
