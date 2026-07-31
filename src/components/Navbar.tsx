@@ -17,7 +17,7 @@ export const Navbar: React.FC = () => {
   };
 
   return (
-    <nav className="sticky top-0 z-50 border-b border-[#d8dfda] bg-white/95 px-4 py-3 backdrop-blur-md transition-colors dark:border-slate-800 dark:bg-slate-900/95 sm:px-6">
+    <nav className="sticky top-0 z-50 border-b border-[var(--line)] bg-[var(--surface)] px-4 py-3 transition-colors sm:px-6">
       <div className="mx-auto flex max-w-[1180px] items-center justify-between gap-4">
         <div className="flex items-center gap-2.5">
           <img
@@ -26,8 +26,8 @@ export const Navbar: React.FC = () => {
             className="h-10 w-10 rounded-lg object-contain"
           />
           <div>
-            <span className="block text-base font-semibold leading-none text-[#18211d] dark:text-white">BNFix</span>
-            <span className="mt-1 block text-[11px] text-[#68746d] dark:text-slate-400">
+            <span className="block text-base font-semibold leading-none text-[var(--ink)]">BNFix</span>
+            <span className="mt-1 block text-[11px] text-[var(--muted)]">
               Benefícios corporativos
             </span>
           </div>
@@ -36,7 +36,7 @@ export const Navbar: React.FC = () => {
         <div className="flex items-center gap-2 sm:gap-3">
           <button
             onClick={toggleTheme}
-            className="rounded-lg p-2 text-[#68746d] hover:bg-[#f0f3ef] dark:text-slate-400 dark:hover:bg-slate-800"
+            className="rounded-lg p-2 text-[var(--muted)] hover:bg-[var(--surface-muted)] hover:text-[var(--ink)]"
             aria-label="Alternar tema"
           >
             {theme === 'light'
@@ -45,21 +45,21 @@ export const Navbar: React.FC = () => {
           </button>
 
           {user && (
-            <div className="flex items-center gap-2 border-l border-[#d8dfda] pl-3 dark:border-slate-800">
-              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#e7efe9] text-sm font-semibold text-[#173f32] dark:bg-slate-800 dark:text-slate-100">
+            <div className="flex items-center gap-2 border-l border-[var(--line)] pl-3">
+              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--brand-soft)] text-sm font-semibold text-[var(--brand-strong)]">
                 {user.name?.charAt(0).toUpperCase()}
               </span>
               <div className="hidden text-left md:block">
-                <span className="block max-w-40 truncate text-sm font-semibold text-[#26342d] dark:text-slate-100">
+                <span className="block max-w-40 truncate text-sm font-semibold text-[var(--ink)]">
                   {user.name}
                 </span>
-                <span className="mt-0.5 block text-xs text-[#68746d] dark:text-slate-400">
+                <span className="mt-0.5 block text-xs text-[var(--muted)]">
                   {getRoleNamePT(user.role)}
                 </span>
               </div>
               <button
                 onClick={logout}
-                className="ml-1 flex h-9 items-center gap-2 rounded-lg px-2 text-[#68746d] hover:bg-[#fff1ef] hover:text-[#a33f35] dark:text-slate-400"
+                className="ml-1 flex h-9 items-center gap-2 rounded-lg px-2 text-[var(--muted)] hover:bg-[#fff1ef] hover:text-[#a33f35] dark:hover:bg-red-950/40 dark:hover:text-red-300"
                 aria-label="Sair da conta"
               >
                 <LogOut className="h-4 w-4" />

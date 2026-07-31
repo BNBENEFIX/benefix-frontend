@@ -28,6 +28,9 @@
   --brand: #194b3a;
   --brand-strong: #12372a;
   --brand-soft: #f1f7f3;
+  --action: #194b3a;
+  --action-hover: #12372a;
+  --action-ink: #ffffff;
   --bg-app: var(--canvas);
   --bg-card: var(--surface);
   --text-main: var(--ink);
@@ -46,6 +49,9 @@
   --brand: #75b695;
   --brand-strong: #a2cfb7;
   --brand-soft: #1c3025;
+  --action: #2f7658;
+  --action-hover: #3b8b69;
+  --action-ink: #ffffff;
 }
 
 * {
@@ -114,6 +120,16 @@ textarea {
 
 .bg-app {
   background: var(--canvas);
+}
+
+.benefits-workspace {
+  background:
+    radial-gradient(
+      circle at 78% -8%,
+      color-mix(in srgb, var(--brand) 10%, transparent) 0,
+      transparent 32rem
+    ),
+    var(--canvas);
 }
 
 .glass-effect {

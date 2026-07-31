@@ -34,8 +34,8 @@ const AuthenticatedApp: React.FC = () => {
 
   const tabClass = (tab: typeof activeTab) =>
     activeTab === tab
-      ? 'bg-[#173f32] text-white'
-      : 'text-[#68746d] hover:bg-[#edf2ee] hover:text-[#173f32] dark:text-slate-300 dark:hover:bg-slate-800';
+      ? 'bg-[var(--action)] text-[var(--action-ink)]'
+      : 'text-[var(--muted)] hover:bg-[var(--surface-muted)] hover:text-[var(--ink)]';
 
   return (
     <div className="flex flex-col min-h-screen bg-app transition-colors">
@@ -44,7 +44,7 @@ const AuthenticatedApp: React.FC = () => {
       {/* O colaborador tem uma única jornada; esconder abas duplicadas reduz
           decisões antes da ação principal "Mostrar QR Code". */}
       {!isEmployee && (
-        <div className="border-b border-[#d8dfda] bg-white px-4 py-3 dark:border-slate-800 dark:bg-slate-900 sm:px-6">
+        <div className="border-b border-[var(--line)] bg-[var(--surface)] px-4 py-3 sm:px-6">
           <div className="mx-auto flex max-w-[1180px] items-center gap-2 text-sm font-semibold">
             <button
               onClick={() => setActiveTab('dashboard')}
@@ -64,7 +64,7 @@ const AuthenticatedApp: React.FC = () => {
         </div>
       )}
 
-      <main className="flex-1 bg-[#f5f6f2] dark:bg-slate-950/20 transition-colors">
+      <main className="flex-1 bg-[var(--canvas)] transition-colors">
         {isEmployee
           ? <SharedBenefitsHub />
           : activeTab === 'catalog'

@@ -84,17 +84,17 @@ const categoriesList: Array<BenefitCategory | 'Todos'> = [
 ];
 
 const feedbackClasses: Record<FeedbackKind, string> = {
-  success: 'border-[#b9d7c6] bg-[#edf8f1] text-[#235c46]',
-  error: 'border-[#efc2bc] bg-[#fff1ef] text-[#8f3730]',
-  info: 'border-[#ead4a8] bg-[#fff8e9] text-[#815a19]',
+  success: 'border-[#b9d7c6] bg-[#edf8f1] text-[#235c46] dark:border-emerald-800 dark:bg-emerald-950/45 dark:text-emerald-300',
+  error: 'border-[#efc2bc] bg-[#fff1ef] text-[#8f3730] dark:border-red-900 dark:bg-red-950/45 dark:text-red-300',
+  info: 'border-[#ead4a8] bg-[#fff8e9] text-[#815a19] dark:border-amber-900 dark:bg-amber-950/45 dark:text-amber-300',
 };
 
 const inputClass = (error?: string) => [
-  'min-h-12 w-full rounded-xl border bg-white px-3.5 text-sm text-[#18211d]',
-  'placeholder:text-[#89938d] focus:outline-none focus:ring-2 disabled:opacity-60',
+  'min-h-12 w-full rounded-xl border bg-[var(--surface)] px-3.5 text-sm text-[var(--ink)]',
+  'placeholder:text-[var(--muted)] focus:outline-none focus:ring-2 disabled:opacity-60',
   error
     ? 'border-[#d98278] focus:border-[#b4473d] focus:ring-[#b4473d]/15'
-    : 'border-[#cfd8d2] focus:border-[#2f7658] focus:ring-[#2f7658]/15',
+    : 'border-[var(--line)] focus:border-[var(--brand)] focus:ring-[var(--brand)]/15',
 ].join(' ');
 
 const Field: React.FC<FieldProps> = ({
@@ -107,12 +107,12 @@ const Field: React.FC<FieldProps> = ({
 }) => (
   <div>
     <div className="flex items-baseline justify-between gap-3">
-      <label htmlFor={id} className="text-sm font-semibold text-[#26342d]">
+      <label htmlFor={id} className="text-sm font-semibold text-[var(--ink)]">
         {label}
       </label>
-      <span className="text-xs text-[#77827b]">{optional ? 'Opcional' : 'Obrigatório'}</span>
+      <span className="text-xs text-[var(--muted)]">{optional ? 'Opcional' : 'Obrigatório'}</span>
     </div>
-    {hint && <p className="mt-1 text-xs leading-5 text-[#77827b]">{hint}</p>}
+    {hint && <p className="mt-1 text-xs leading-5 text-[var(--muted)]">{hint}</p>}
     <div className="mt-2">{children}</div>
     {error && (
       <p className="mt-2 flex items-center gap-2 text-sm text-[#a33f35]">
@@ -363,27 +363,27 @@ export const BenefitsCatalog: React.FC = () => {
     return (
       <div
         role="status"
-        className="flex min-h-[520px] flex-col items-center justify-center bg-[#f5f6f2] px-6 text-center"
+        className="benefits-workspace flex min-h-[520px] flex-col items-center justify-center px-6 text-center"
       >
-        <Loader2 className="h-9 w-9 animate-spin text-[#2f7658]" />
-        <h1 className="mt-5 text-xl font-semibold text-[#18211d]">Carregando benefícios</h1>
-        <p className="mt-2 text-sm text-[#68746d]">Organizando as opções da sua empresa.</p>
+        <Loader2 className="h-9 w-9 animate-spin text-[var(--brand)]" />
+        <h1 className="mt-5 text-xl font-semibold text-[var(--ink)]">Carregando benefícios</h1>
+        <p className="mt-2 text-sm text-[var(--muted)]">Organizando as opções da sua empresa.</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#f5f6f2] px-4 py-6 text-[#18211d] sm:px-6 sm:py-9">
+    <div className="benefits-workspace min-h-screen px-4 py-6 text-[var(--ink)] sm:px-6 sm:py-9">
       <div className="mx-auto max-w-[1180px]">
-        <header className="flex flex-col gap-5 border-b border-[#d8dfda] pb-7 sm:flex-row sm:items-end sm:justify-between">
+        <header className="flex flex-col gap-5 border-b border-[var(--line)] pb-7 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[.14em] text-[#2f7658]">
+            <p className="text-xs font-semibold uppercase tracking-[.14em] text-[var(--brand)]">
               Gestão de benefícios
             </p>
             <h1 className="mt-3 font-display text-3xl tracking-[-.03em] sm:text-4xl">
               {isManager ? 'Benefícios da empresa' : 'Benefícios disponíveis'}
             </h1>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-[#68746d]">
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--muted)]">
               {isManager
                 ? 'Cadastre o que sua empresa oferece ou encontre opções de empresas parceiras.'
                 : 'Veja os benefícios disponíveis na plataforma.'}
@@ -393,7 +393,7 @@ export const BenefitsCatalog: React.FC = () => {
             <button
               type="button"
               onClick={openCreate}
-              className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#173f32] px-5 text-sm font-semibold text-white hover:bg-[#102e25] sm:w-auto"
+              className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[var(--action)] px-5 text-sm font-semibold text-[var(--action-ink)] shadow-[0_10px_26px_rgba(18,55,42,.18)] hover:bg-[var(--action-hover)] sm:w-auto"
             >
               <Plus className="h-5 w-5" />
               Cadastrar benefício
@@ -410,8 +410,8 @@ export const BenefitsCatalog: React.FC = () => {
               onClick={() => changeView('mine')}
               className={`flex min-h-20 items-center justify-between rounded-xl border p-4 text-left ${
                 activeView === 'mine'
-                  ? 'border-[#2f7658] bg-[#edf5f0] text-[#173f32]'
-                  : 'border-[#d5ddd8] bg-white text-[#536159] hover:border-[#aebdb4]'
+                  ? 'border-[var(--brand)] bg-[var(--brand-soft)] text-[var(--brand-strong)]'
+                  : 'border-[var(--line)] bg-[var(--surface)] text-[var(--muted)] hover:border-[var(--brand)]'
               }`}
             >
               <span className="flex items-center gap-3">
@@ -428,8 +428,8 @@ export const BenefitsCatalog: React.FC = () => {
               onClick={() => changeView('discover')}
               className={`flex min-h-20 items-center justify-between rounded-xl border p-4 text-left ${
                 activeView === 'discover'
-                  ? 'border-[#2f7658] bg-[#edf5f0] text-[#173f32]'
-                  : 'border-[#d5ddd8] bg-white text-[#536159] hover:border-[#aebdb4]'
+                  ? 'border-[var(--brand)] bg-[var(--brand-soft)] text-[var(--brand-strong)]'
+                  : 'border-[var(--line)] bg-[var(--surface)] text-[var(--muted)] hover:border-[var(--brand)]'
               }`}
             >
               <span className="flex items-center gap-3">
@@ -460,10 +460,10 @@ export const BenefitsCatalog: React.FC = () => {
         )}
 
         <section className="mt-7">
-          <div className="rounded-2xl border border-[#d5ddd8] bg-white p-4 sm:p-5">
+          <div className="rounded-2xl border border-[var(--line)] bg-[var(--surface)] p-4 shadow-[0_12px_40px_rgba(18,55,42,.05)] sm:p-5 dark:shadow-[0_18px_50px_rgba(0,0,0,.18)]">
             <label htmlFor="benefit-search" className="sr-only">Buscar benefício</label>
             <div className="relative">
-              <Search className="absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-[#7d8881]" />
+              <Search className="absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-[var(--muted)]" />
               <input
                 id="benefit-search"
                 type="search"
@@ -474,7 +474,7 @@ export const BenefitsCatalog: React.FC = () => {
                 }
                 value={searchTerm}
                 onChange={(event) => setSearchTerm(event.target.value)}
-                className="h-12 w-full rounded-xl border border-[#cfd8d2] bg-[#f7f8f5] pl-11 pr-4 text-sm outline-none focus:border-[#2f7658] focus:ring-2 focus:ring-[#2f7658]/15"
+                className="h-12 w-full rounded-xl border border-[var(--line)] bg-[var(--surface-muted)] pl-11 pr-4 text-sm text-[var(--ink)] outline-none placeholder:text-[var(--muted)] focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand)]/15"
               />
             </div>
             <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
@@ -485,8 +485,8 @@ export const BenefitsCatalog: React.FC = () => {
                   onClick={() => setSelectedCategory(category)}
                   className={`h-9 shrink-0 rounded-full px-4 text-xs font-semibold ${
                     selectedCategory === category
-                      ? 'bg-[#173f32] text-white'
-                      : 'border border-[#d5ddd8] bg-white text-[#68746d] hover:border-[#9eafa4]'
+                      ? 'bg-[var(--action)] text-[var(--action-ink)]'
+                      : 'border border-[var(--line)] bg-[var(--surface)] text-[var(--muted)] hover:border-[var(--brand)]'
                   }`}
                 >
                   {category}
@@ -500,7 +500,7 @@ export const BenefitsCatalog: React.FC = () => {
               <h2 className="text-xl font-semibold">
                 {activeView === 'mine' ? 'Cadastrados pela empresa' : 'Oferecidos por parceiros'}
               </h2>
-              <p className="mt-1 text-sm text-[#68746d]">
+              <p className="mt-1 text-sm text-[var(--muted)]">
                 {filteredBenefits.length}{' '}
                 {filteredBenefits.length === 1 ? 'resultado' : 'resultados'}
               </p>
@@ -508,7 +508,7 @@ export const BenefitsCatalog: React.FC = () => {
             <button
               type="button"
               onClick={loadCatalog}
-              className="flex h-10 shrink-0 items-center gap-2 rounded-lg border border-[#d5ddd8] bg-white px-3 text-xs font-semibold text-[#536159] hover:bg-[#f3f6f3]"
+              className="flex h-10 shrink-0 items-center gap-2 rounded-lg border border-[var(--line)] bg-[var(--surface)] px-3 text-xs font-semibold text-[var(--muted)] hover:bg-[var(--surface-muted)] hover:text-[var(--ink)]"
             >
               <RefreshCw className="h-4 w-4" />
               <span className="hidden sm:inline">Atualizar</span>
@@ -516,8 +516,8 @@ export const BenefitsCatalog: React.FC = () => {
           </div>
 
           {filteredBenefits.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-[#c8d1cb] bg-white/60 p-9">
-              <Package className="h-8 w-8 text-[#91a098]" />
+            <div className="rounded-2xl border border-dashed border-[var(--line)] bg-[var(--surface)]/70 p-9">
+              <Package className="h-8 w-8 text-[var(--muted)]" />
               <h3 className="mt-4 text-lg font-semibold">
                 {visibleBenefits.length === 0
                   ? activeView === 'mine'
@@ -525,7 +525,7 @@ export const BenefitsCatalog: React.FC = () => {
                     : 'Nenhum benefício de parceiro disponível'
                   : 'Nenhum resultado encontrado'}
               </h3>
-              <p className="mt-2 max-w-lg text-sm leading-6 text-[#68746d]">
+              <p className="mt-2 max-w-lg text-sm leading-6 text-[var(--muted)]">
                 {visibleBenefits.length === 0 && activeView === 'mine'
                   ? 'Cadastre o primeiro benefício oferecido pela sua empresa.'
                   : visibleBenefits.length === 0
@@ -536,7 +536,7 @@ export const BenefitsCatalog: React.FC = () => {
                 <button
                   type="button"
                   onClick={openCreate}
-                  className="mt-5 flex h-11 items-center gap-2 rounded-xl bg-[#173f32] px-5 text-sm font-semibold text-white"
+                  className="mt-5 flex h-11 items-center gap-2 rounded-xl bg-[var(--action)] px-5 text-sm font-semibold text-[var(--action-ink)]"
                 >
                   <Plus className="h-4 w-4" />
                   Cadastrar primeiro benefício
@@ -551,18 +551,18 @@ export const BenefitsCatalog: React.FC = () => {
                 return (
                   <article
                     key={benefit.id}
-                    className="flex flex-col rounded-2xl border border-[#d5ddd8] bg-white p-5 shadow-[0_8px_30px_rgba(23,63,50,.045)]"
+                    className="flex flex-col rounded-2xl border border-[var(--line)] bg-[var(--surface)] p-5 shadow-[0_8px_30px_rgba(23,63,50,.045)] dark:shadow-[0_16px_38px_rgba(0,0,0,.16)]"
                   >
                     <div className="flex items-start justify-between gap-3">
-                      <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#e7efe9] text-[#2f7658]">
+                      <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--brand-soft)] text-[var(--brand)]">
                         <Tag className="h-5 w-5" />
                       </span>
                       <span className={`rounded-full px-3 py-1 text-xs font-semibold ${
                         isOwnCard
                           ? benefit.active === false
-                            ? 'bg-[#f0f1ef] text-[#68746d]'
-                            : 'bg-[#edf8f1] text-[#2f7658]'
-                          : 'bg-[#eef2ed] text-[#536159]'
+                            ? 'bg-[var(--surface-muted)] text-[var(--muted)]'
+                            : 'bg-[var(--brand-soft)] text-[var(--brand)]'
+                          : 'bg-[var(--surface-muted)] text-[var(--muted)]'
                       }`}>
                         {isOwnCard
                           ? benefit.active === false ? 'Pausado' : 'Disponível'
@@ -571,7 +571,7 @@ export const BenefitsCatalog: React.FC = () => {
                     </div>
 
                     {!isOwnCard && (
-                      <p className="mt-5 flex items-center gap-2 text-xs font-semibold uppercase tracking-[.08em] text-[#2f7658]">
+                      <p className="mt-5 flex items-center gap-2 text-xs font-semibold uppercase tracking-[.08em] text-[var(--brand)]">
                         <Building2 className="h-4 w-4" />
                         {benefit.supplierName}
                       </p>
@@ -579,16 +579,16 @@ export const BenefitsCatalog: React.FC = () => {
                     <h3 className={`${isOwnCard ? 'mt-5' : 'mt-2'} text-lg font-semibold tracking-[-.015em]`}>
                       {benefit.name}
                     </h3>
-                    <p className="mt-3 line-clamp-3 text-sm leading-6 text-[#68746d]">
+                    <p className="mt-3 line-clamp-3 text-sm leading-6 text-[var(--muted)]">
                       {benefit.description || 'Sem descrição informada.'}
                     </p>
 
                     {isManager && isOwnCard ? (
-                      <div className="mt-auto grid grid-cols-[1fr_auto] gap-2 border-t border-[#edf0ed] pt-5">
+                      <div className="mt-auto grid grid-cols-[1fr_auto] gap-2 border-t border-[var(--line)] pt-5">
                         <button
                           type="button"
                           onClick={() => handleStatusChange(benefit, benefit.active === false)}
-                          className="h-11 rounded-lg border border-[#cbd6cf] px-4 text-sm font-semibold text-[#345445] hover:bg-[#f1f5f2]"
+                          className="h-11 rounded-lg border border-[var(--line)] px-4 text-sm font-semibold text-[var(--ink)] hover:bg-[var(--surface-muted)]"
                         >
                           {benefit.active === false ? 'Ativar' : 'Pausar'}
                         </button>
@@ -596,7 +596,7 @@ export const BenefitsCatalog: React.FC = () => {
                           type="button"
                           onClick={() => setDeleteTarget(benefit)}
                           aria-label={`Excluir ${benefit.name}`}
-                          className="flex h-11 w-11 items-center justify-center rounded-lg border border-[#e1c7c3] text-[#a33f35] hover:bg-[#fff1ef]"
+                          className="flex h-11 w-11 items-center justify-center rounded-lg border border-[#e1c7c3] text-[#a33f35] hover:bg-[#fff1ef] dark:border-red-900 dark:text-red-300 dark:hover:bg-red-950/40"
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>
@@ -606,13 +606,13 @@ export const BenefitsCatalog: React.FC = () => {
                         type="button"
                         onClick={() => handlePartnershipRequest(benefit)}
                         disabled={requested || partnershipBusyId === benefit.id}
-                        className="mt-auto flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#173f32] px-4 text-sm font-semibold text-white hover:bg-[#102e25] disabled:bg-[#8d9b93]"
+                        className="mt-auto flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[var(--action)] px-4 text-sm font-semibold text-[var(--action-ink)] hover:bg-[var(--action-hover)] disabled:bg-[#8d9b93]"
                       >
                         {partnershipBusyId === benefit.id && <Loader2 className="h-4 w-4 animate-spin" />}
                         {requested ? 'Pedido enviado' : 'Solicitar parceria'}
                       </button>
                     ) : (
-                      <div className="mt-auto border-t border-[#edf0ed] pt-4 text-sm font-medium text-[#536159]">
+                      <div className="mt-auto border-t border-[var(--line)] pt-4 text-sm font-medium text-[var(--muted)]">
                         {benefit.supplierName}
                       </div>
                     )}
@@ -630,14 +630,14 @@ export const BenefitsCatalog: React.FC = () => {
             role="dialog"
             aria-modal="true"
             aria-labelledby="create-benefit-title"
-            className="max-h-[96vh] w-full overflow-y-auto rounded-t-3xl bg-[#f8f9f6] shadow-2xl sm:max-w-xl sm:rounded-3xl"
+            className="max-h-[96vh] w-full overflow-y-auto rounded-t-3xl bg-[var(--canvas)] text-[var(--ink)] shadow-2xl sm:max-w-xl sm:rounded-3xl"
           >
-            <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-[#dbe2dd] bg-[#f8f9f6] p-5 sm:p-6">
+            <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-[var(--line)] bg-[var(--canvas)] p-5 sm:p-6">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[.14em] text-[#2f7658]">
+                <p className="text-xs font-semibold uppercase tracking-[.14em] text-[var(--brand)]">
                   Etapa {formStep} de 2
                 </p>
-                <h2 id="create-benefit-title" className="mt-2 text-2xl font-semibold text-[#18211d]">
+                <h2 id="create-benefit-title" className="mt-2 text-2xl font-semibold text-[var(--ink)]">
                   {formStep === 1 ? 'O que sua empresa oferece?' : 'Como esse benefício pode ser usado?'}
                 </h2>
               </div>
@@ -645,14 +645,14 @@ export const BenefitsCatalog: React.FC = () => {
                 type="button"
                 onClick={() => setShowCreate(false)}
                 aria-label="Fechar cadastro"
-                className="rounded-lg p-2 text-[#68746d] hover:bg-[#edf0ed]"
+                className="rounded-lg p-2 text-[var(--muted)] hover:bg-[var(--surface-muted)]"
               >
                 <X className="h-5 w-5" />
               </button>
             </div>
 
-            <div className="h-1 bg-[#e1e7e2]">
-              <div className={`h-full bg-[#2f7658] transition-[width] ${formStep === 1 ? 'w-1/2' : 'w-full'}`} />
+            <div className="h-1 bg-[var(--surface-muted)]">
+              <div className={`h-full bg-[var(--brand)] transition-[width] ${formStep === 1 ? 'w-1/2' : 'w-full'}`} />
             </div>
 
             {formApiError && (
@@ -729,9 +729,9 @@ export const BenefitsCatalog: React.FC = () => {
                   </>
                 ) : (
                   <>
-                    <div className="rounded-xl border border-[#d5ddd8] bg-white p-4">
-                      <p className="text-xs font-medium text-[#68746d]">Benefício</p>
-                      <p className="mt-1 font-semibold text-[#18211d]">{form.name}</p>
+                    <div className="rounded-xl border border-[var(--line)] bg-[var(--surface)] p-4">
+                      <p className="text-xs font-medium text-[var(--muted)]">Benefício</p>
+                      <p className="mt-1 font-semibold text-[var(--ink)]">{form.name}</p>
                     </div>
                     <Field
                       id="benefit-limit"
@@ -793,13 +793,13 @@ export const BenefitsCatalog: React.FC = () => {
                 )}
               </div>
 
-              <div className="sticky bottom-0 grid gap-3 border-t border-[#dbe2dd] bg-white p-5 sm:grid-cols-[auto_1fr] sm:p-6">
+              <div className="sticky bottom-0 grid gap-3 border-t border-[var(--line)] bg-[var(--surface)] p-5 sm:grid-cols-[auto_1fr] sm:p-6">
                 {formStep === 2 ? (
                   <button
                     type="button"
                     onClick={() => setFormStep(1)}
                     disabled={formLoading}
-                    className="flex h-12 items-center justify-center gap-2 rounded-xl border border-[#cfd8d2] px-5 text-sm font-semibold text-[#536159]"
+                    className="flex h-12 items-center justify-center gap-2 rounded-xl border border-[var(--line)] px-5 text-sm font-semibold text-[var(--muted)] hover:bg-[var(--surface-muted)] hover:text-[var(--ink)]"
                   >
                     <ArrowLeft className="h-4 w-4" />
                     Voltar
@@ -808,7 +808,7 @@ export const BenefitsCatalog: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setShowCreate(false)}
-                    className="h-12 rounded-xl border border-[#cfd8d2] px-5 text-sm font-semibold text-[#536159]"
+                    className="h-12 rounded-xl border border-[var(--line)] px-5 text-sm font-semibold text-[var(--muted)] hover:bg-[var(--surface-muted)] hover:text-[var(--ink)]"
                   >
                     Cancelar
                   </button>
@@ -818,7 +818,7 @@ export const BenefitsCatalog: React.FC = () => {
                   <button
                     type="button"
                     onClick={goToRules}
-                    className="flex h-12 items-center justify-center gap-2 rounded-xl bg-[#173f32] px-5 text-sm font-semibold text-white"
+                    className="flex h-12 items-center justify-center gap-2 rounded-xl bg-[var(--action)] px-5 text-sm font-semibold text-[var(--action-ink)] hover:bg-[var(--action-hover)]"
                   >
                     Continuar
                     <ChevronRight className="h-4 w-4" />
@@ -827,7 +827,7 @@ export const BenefitsCatalog: React.FC = () => {
                   <button
                     type="submit"
                     disabled={formLoading}
-                    className="flex h-12 items-center justify-center gap-2 rounded-xl bg-[#173f32] px-5 text-sm font-semibold text-white disabled:opacity-60"
+                    className="flex h-12 items-center justify-center gap-2 rounded-xl bg-[var(--action)] px-5 text-sm font-semibold text-[var(--action-ink)] hover:bg-[var(--action-hover)] disabled:opacity-60"
                   >
                     {formLoading
                       ? <Loader2 className="h-4 w-4 animate-spin" />
@@ -847,15 +847,15 @@ export const BenefitsCatalog: React.FC = () => {
             role="alertdialog"
             aria-modal="true"
             aria-labelledby="delete-benefit-title"
-            className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl"
+            className="w-full max-w-sm rounded-2xl bg-[var(--surface)] p-6 text-[var(--ink)] shadow-2xl"
           >
-            <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#fff1ef] text-[#b4473d]">
+            <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#fff1ef] text-[#b4473d] dark:bg-red-950/45 dark:text-red-300">
               <Trash2 className="h-5 w-5" />
             </span>
             <h2 id="delete-benefit-title" className="mt-5 text-xl font-semibold">
               Excluir {deleteTarget.name}?
             </h2>
-            <p className="mt-2 text-sm leading-6 text-[#68746d]">
+            <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
               O benefício será removido e não poderá mais ser solicitado. Esta ação não pode
               ser desfeita.
             </p>
@@ -864,7 +864,7 @@ export const BenefitsCatalog: React.FC = () => {
                 type="button"
                 onClick={() => setDeleteTarget(null)}
                 disabled={deleteLoading}
-                className="h-12 rounded-xl border border-[#cfd8d2] text-sm font-semibold text-[#536159]"
+                className="h-12 rounded-xl border border-[var(--line)] text-sm font-semibold text-[var(--muted)] hover:bg-[var(--surface-muted)] hover:text-[var(--ink)]"
               >
                 Manter benefício
               </button>
