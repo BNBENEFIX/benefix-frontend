@@ -25,6 +25,16 @@ export interface LoginResponse {
   user?: BackendUser;
 }
 
+export interface SwitchCompanyRequest {
+  companyId: number;
+}
+
+export interface SwitchCompanyResponse {
+  token: string;
+  accessToken?: string;
+  access_token?: string;
+}
+
 // ── Entidades do backend ─────────────────────────────────────────────────────
 
 export interface BackendUser {
@@ -77,6 +87,17 @@ export interface BackendCompany {
   name: string;
   cnpj: string;
   active?: boolean;
+  /** Apenas a membership proprietária pode encerrar o tenant. */
+  owner?: boolean;
+}
+
+export interface CreateCompanyPayload {
+  name: string;
+  cnpj: string;
+}
+
+export interface DeactivateCompanyPayload {
+  password: string;
 }
 
 export interface BackendPartnership {
@@ -322,7 +343,7 @@ export interface SharedBenefit {
   validUntil?: string;
   maxUsesPerUser: number;
   terms?: string;
-  accessStatus: 'AVAILABLE_TO_REQUEST' | 'PENDING' | 'APPROVED' | 'REJECTED';
+  accessStatus: 'AVAILABLE_TO_REQUEST' | 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
 }
 
 export interface SharedBenefitRequest {

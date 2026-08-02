@@ -5,7 +5,15 @@
  * role, nome e id sem precisar de chamadas extras de /me.
  */
 import bnfixApi, { setToken, clearToken, USER_KEY } from './bnfixApi';
-import type { LoginRequest, LoginResponse, BackendRole, User, UserRole } from '../types';
+import type {
+  LoginRequest,
+  LoginResponse,
+  SwitchCompanyRequest,
+  SwitchCompanyResponse,
+  BackendRole,
+  User,
+  UserRole,
+} from '../types';
 
 // ── Mapeamento de role do backend para role de UI ────────────────────────────
 
@@ -53,9 +61,9 @@ export const buildUserFromToken = (token: string, emailFallback?: string): User 
 
   const uiRole = backendRoleToUIRole(backendRole as BackendRole);
   const stableId =
+    payload.accountId ??
     payload.id ??
     payload.userId ??
-    (uiRole === 'COMPANY' && payload.companyId ? payload.companyId : null) ??
     payload.sub ??
     emailFallback ??
     '';
@@ -118,6 +126,20 @@ export const login = async (
 
   localStorage.setItem(USER_KEY, JSON.stringify(user));
   return { user, token };
+};
+
+// ── Troca do tenant ativo ────────────────────────────────────────────────────
+
+export const switchCompany = async (companyId: number): Promise<string> => {
+  const payload: SwitchCompanyRequest = { companyId };
+  const { data } = await bnfixApi.post<SwitchCompanyResponse>('/auth/switch-company', payload);
+
+  const token = data.token ?? data.accessToken ?? data.access_token ?? '';
+  if (!token) {
+    throw new Error('Token não retornado ao trocar de empresa.');
+  }
+
+  return token;
 };
 
 // ── Busca dados do manager logado ─────────────────────────────────────────────

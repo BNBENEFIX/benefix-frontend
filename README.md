@@ -24,6 +24,8 @@ fornecida separadamente pelo backend em Quarkus.
 - Login e cadastro de empresas
 - Dashboards específicos para administrador, empresa e usuário
 - Gestão de empresas, colaboradores e benefícios
+- Alternância entre várias empresas usando o mesmo login
+- Inclusão e desativação lógica de empresas pelo gestor proprietário, com confirmação segura
 - Catálogo de benefícios próprios e compartilhados
 - Solicitação e aprovação de acesso a benefícios de outras empresas
 - Geração de QR Code temporário para resgate

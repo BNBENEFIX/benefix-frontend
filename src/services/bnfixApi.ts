@@ -48,10 +48,11 @@ bnfixApi.interceptors.response.use(
     if (error.response) {
       const { status } = error.response;
       const requestPath = error.config?.url?.split('?')[0].replace(/\/+$/, '');
+      const isCredentialConfirmation = requestPath === '/companies/me/deactivate';
 
       // Uma sessão rejeitada não deve continuar presa no navegador. O login
-      // fica de fora para preservar a mensagem de credenciais incorretas.
-      if (status === 401 && requestPath !== '/auth/login') {
+      // e confirmações por senha ficam de fora para preservar o erro no formulário.
+      if (status === 401 && requestPath !== '/auth/login' && !isCredentialConfirmation) {
         clearToken();
       }
     }

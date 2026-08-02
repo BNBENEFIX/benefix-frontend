@@ -362,13 +362,17 @@ export function SharedBenefitsHub() {
                       ? 'text-[#2f7658]'
                       : request.status === 'REJECTED'
                         ? 'text-[#a13e35]'
-                        : 'text-[#815a19]'
+                        : request.status === 'CANCELLED'
+                          ? 'text-[#68746d]'
+                          : 'text-[#815a19]'
                   }`}>
                     {request.status === 'APPROVED'
                       ? 'Aprovado'
                       : request.status === 'REJECTED'
                         ? 'Não aprovado'
-                        : 'Aguardando resposta'}
+                        : request.status === 'CANCELLED'
+                          ? 'Cancelado — empresa desativada'
+                          : 'Aguardando resposta'}
                   </span>
                 </div>
               ))

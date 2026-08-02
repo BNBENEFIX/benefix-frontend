@@ -1,11 +1,13 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import type { User, UserRole } from '../types';
+import type { BackendCompany, User } from '../types';
 import {
   login as apiLogin,
   logout as apiLogout,
+  switchCompany as apiSwitchCompany,
   buildUserFromToken,
 } from '../services/authService';
 import { TOKEN_KEY, USER_KEY, getToken } from '../services/bnfixApi';
+import { companyService } from '../services/companyService';
 
 const LAST_ACTIVITY_KEY = 'bnfix_last_activity';
 const SESSION_IDLE_TIMEOUT_MS = 30 * 60 * 1000;
@@ -16,9 +18,16 @@ interface AuthContextType {
   user: User | null;
   token: string | null;
   loading: boolean;
+  companies: BackendCompany[];
+  companiesLoading: boolean;
+  switchingCompany: boolean;
   /** Login real com email + senha contra a API BNFix */
   login: (email: string, password: string) => Promise<{ success: boolean; message?: string }>;
   logout: () => void;
+  /** Recarrega as empresas ativas vinculadas à conta autenticada. */
+  refreshCompanies: () => Promise<BackendCompany[]>;
+  /** Troca o contexto do tenant e substitui o JWT da sessão. */
+  switchCompany: (companyId: number) => Promise<{ success: boolean; message?: string }>;
   /** Atualiza dados do usuário a partir do token armazenado */
   refreshUserData: () => Promise<void>;
 }
@@ -31,11 +40,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser]   = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [companies, setCompanies] = useState<BackendCompany[]>([]);
+  const [companiesLoading, setCompaniesLoading] = useState(false);
+  const [switchingCompany, setSwitchingCompany] = useState(false);
 
   const clearSession = useCallback(() => {
     apiLogout();
     setUser(null);
     setToken(null);
+    setCompanies([]);
+    setCompaniesLoading(false);
+    setSwitchingCompany(false);
     localStorage.removeItem(LAST_ACTIVITY_KEY);
   }, []);
 
@@ -47,14 +62,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const hydrateUserFromStorage = useCallback((storedToken: string, storedUserRaw: string | null): User | null => {
     const tokenUser = buildUserFromToken(storedToken);
-    const storedUser = storedUserRaw ? (JSON.parse(storedUserRaw) as User) : null;
+    let storedUser: User | null = null;
+
+    if (storedUserRaw) {
+      try {
+        storedUser = JSON.parse(storedUserRaw) as User;
+      } catch {
+        localStorage.removeItem(USER_KEY);
+      }
+    }
 
     if (tokenUser && storedUser) {
+      // Identity, role and tenant are security context: the JWT is always
+      // authoritative. The cached object may only restore cosmetic fields.
+      const sameStoredAccount = typeof storedUser.email === 'string'
+        && storedUser.email.toLowerCase() === tokenUser.email.toLowerCase();
       const mergedUser: User = {
         ...tokenUser,
-        ...storedUser,
-        backendRole: tokenUser.backendRole ?? storedUser.backendRole,
-        role: tokenUser.role ?? storedUser.role,
+        name: sameStoredAccount && typeof storedUser.name === 'string'
+          ? storedUser.name
+          : tokenUser.name,
+        avatarUrl: sameStoredAccount && typeof storedUser.avatarUrl === 'string'
+          ? storedUser.avatarUrl
+          : undefined,
+        score: tokenUser.score ?? (sameStoredAccount && typeof storedUser.score === 'number'
+          ? storedUser.score
+          : undefined),
+        level: tokenUser.level ?? (sameStoredAccount ? storedUser.level : undefined),
       };
       localStorage.setItem(USER_KEY, JSON.stringify(mergedUser));
       return mergedUser;
@@ -66,6 +100,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     return null;
+  }, []);
+
+  const refreshCompanies = useCallback(async (): Promise<BackendCompany[]> => {
+    setCompaniesLoading(true);
+    try {
+      const availableCompanies = await companyService.listMine();
+      setCompanies(availableCompanies);
+      return availableCompanies;
+    } finally {
+      setCompaniesLoading(false);
+    }
   }, []);
 
   // Inicializa sessão a partir do token salvo no localStorage
@@ -92,6 +137,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           if (hydratedUser) {
             setToken(storedToken);
             setUser(hydratedUser);
+            if (hydratedUser.role === 'COMPANY') {
+              try {
+                const availableCompanies = await refreshCompanies();
+                const currentCompany = availableCompanies.find(
+                  (item) => String(item.id) === hydratedUser.companyId,
+                );
+                if (currentCompany) {
+                  const enrichedUser = { ...hydratedUser, companyName: currentCompany.name };
+                  setUser(enrichedUser);
+                  localStorage.setItem(USER_KEY, JSON.stringify(enrichedUser));
+                }
+              } catch (err) {
+                console.warn('[AuthContext] Não foi possível carregar as empresas da conta:', err);
+              }
+            }
           } else {
             clearSession();
           }
@@ -131,7 +191,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       activityEvents.forEach((eventName) => window.removeEventListener(eventName, handleActivity));
       window.clearInterval(intervalId);
     };
-  }, [clearSession, hydrateUserFromStorage, touchActivity]);
+  }, [clearSession, hydrateUserFromStorage, refreshCompanies, touchActivity]);
 
   // ── Login ──────────────────────────────────────────────────────────────────
 
@@ -139,11 +199,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setLoading(true);
     try {
       const { user: loggedUser, token: jwt } = await apiLogin(email, password);
-      setUser(loggedUser);
+      let nextUser = loggedUser;
+
+      if (loggedUser.role === 'COMPANY') {
+        try {
+          const availableCompanies = await refreshCompanies();
+          const currentCompany = availableCompanies.find(
+            (item) => String(item.id) === loggedUser.companyId,
+          );
+          if (currentCompany) {
+            nextUser = { ...loggedUser, companyName: currentCompany.name };
+          }
+        } catch (err) {
+          console.warn('[AuthContext] Login concluído, mas a lista de empresas não carregou:', err);
+        }
+      } else {
+        setCompanies([]);
+      }
+
+      setUser(nextUser);
       setToken(jwt);
       touchActivity();
 
-      localStorage.setItem(USER_KEY, JSON.stringify(loggedUser));
+      localStorage.setItem(USER_KEY, JSON.stringify(nextUser));
 
       return { success: true };
     } catch (err: any) {
@@ -176,13 +254,69 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } finally {
       setLoading(false);
     }
-  }, [touchActivity]);
+  }, [refreshCompanies, touchActivity]);
 
   // ── Logout ─────────────────────────────────────────────────────────────────
 
   const logout = useCallback(() => {
     clearSession();
   }, [clearSession]);
+
+  // ── Troca de empresa ───────────────────────────────────────────────────────
+
+  const switchCompany = useCallback(async (
+    companyId: number,
+  ): Promise<{ success: boolean; message?: string }> => {
+    if (!Number.isFinite(companyId) || companyId <= 0) {
+      return { success: false, message: 'Empresa inválida.' };
+    }
+
+    if (String(companyId) === user?.companyId) {
+      return { success: true };
+    }
+
+    setSwitchingCompany(true);
+    try {
+      const jwt = await apiSwitchCompany(companyId);
+      const tokenUser = buildUserFromToken(jwt, user?.email);
+
+      if (!tokenUser) {
+        throw new Error('A nova sessão não pôde ser validada.');
+      }
+
+      if (tokenUser.companyId !== String(companyId)) {
+        throw new Error('A empresa retornada pela nova sessão não corresponde à empresa selecionada.');
+      }
+
+      const selectedCompany = companies.find((item) => String(item.id) === tokenUser.companyId);
+      const sameAccount = user?.email.toLowerCase() === tokenUser.email.toLowerCase();
+      const nextUser: User = {
+        ...tokenUser,
+        name: sameAccount ? (user?.name ?? tokenUser.name) : tokenUser.name,
+        avatarUrl: user?.avatarUrl,
+        score: tokenUser.score ?? user?.score,
+        level: tokenUser.level ?? user?.level,
+        companyName: selectedCompany?.name ?? tokenUser.companyName,
+      };
+
+      localStorage.setItem(TOKEN_KEY, jwt);
+      setToken(jwt);
+      setUser(nextUser);
+      localStorage.setItem(USER_KEY, JSON.stringify(nextUser));
+      touchActivity();
+
+      return { success: true };
+    } catch (err: any) {
+      console.error('[AuthContext] Falha ao trocar de empresa:', err);
+      const backendMsg: string = err?.response?.data?.message ?? '';
+      return {
+        success: false,
+        message: backendMsg || 'Não foi possível trocar de empresa. Tente novamente.',
+      };
+    } finally {
+      setSwitchingCompany(false);
+    }
+  }, [companies, touchActivity, user]);
 
   // ── Refresh ────────────────────────────────────────────────────────────────
 
@@ -201,7 +335,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [hydrateUserFromStorage]);
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, logout, refreshUserData }}>
+    <AuthContext.Provider value={{
+      user,
+      token,
+      loading,
+      companies,
+      companiesLoading,
+      switchingCompany,
+      login,
+      logout,
+      refreshCompanies,
+      switchCompany,
+      refreshUserData,
+    }}>
       {children}
     </AuthContext.Provider>
   );

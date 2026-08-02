@@ -7,7 +7,7 @@ import type { BackendEmployee, BackendCompany, Announcement } from '../types';
 import {
   Users, UserPlus, UserCheck, UserX, Building2, Send,
   RefreshCw, Search, ChevronDown, ChevronUp, X, AlertCircle,
-  CheckCircle2, FileSpreadsheet, Activity, Heart
+  CheckCircle2, FileSpreadsheet, Activity, Heart, ShieldAlert, Loader2
 } from 'lucide-react';
 import { Toast } from '../components/Toast';
 
@@ -48,7 +48,7 @@ function isValidCpf(cpf: string): boolean {
 // ─── componente ──────────────────────────────────────────────────────────────
 
 export const DashboardRH: React.FC = () => {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
 
   // dados da API
   const [employees, setEmployees]   = useState<BackendEmployee[]>([]);
@@ -66,6 +66,13 @@ export const DashboardRH: React.FC = () => {
   const [formError, setFormError]   = useState<string>('');
   const [formLoading, setFormLoading] = useState(false);
   const [expandedId, setExpandedId] = useState<number | null>(null);
+
+  // ciclo de vida da empresa
+  const [deactivateModalOpen, setDeactivateModalOpen] = useState(false);
+  const [deactivatePassword, setDeactivatePassword] = useState('');
+  const [deactivateConfirmation, setDeactivateConfirmation] = useState('');
+  const [deactivateError, setDeactivateError] = useState('');
+  const [deactivatingCompany, setDeactivatingCompany] = useState(false);
 
   // comunicado
   const [annTitle, setAnnTitle]     = useState('');
@@ -111,6 +118,20 @@ export const DashboardRH: React.FC = () => {
   }, []);
 
   useEffect(() => { loadData(); }, [loadData]);
+
+  useEffect(() => {
+    if (!deactivateModalOpen) return;
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && !deactivatingCompany) {
+        setDeactivateModalOpen(false);
+        setDeactivatePassword('');
+        setDeactivateConfirmation('');
+        setDeactivateError('');
+      }
+    };
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [deactivateModalOpen, deactivatingCompany]);
 
   // ── ações sobre colaboradores ──────────────────────────────────────────────
 
@@ -235,6 +256,51 @@ export const DashboardRH: React.FC = () => {
 
   const handleExportReport = (format: 'PDF' | 'EXCEL') =>
     showToast(`Relatório exportado em formato ${format} com sucesso.`);
+
+  const closeDeactivateModal = () => {
+    if (deactivatingCompany) return;
+    setDeactivateModalOpen(false);
+    setDeactivatePassword('');
+    setDeactivateConfirmation('');
+    setDeactivateError('');
+  };
+
+  const handleDeactivateCompany = async (event: React.FormEvent) => {
+    event.preventDefault();
+    const expectedName = company?.name ?? user?.companyName ?? '';
+
+    if (!expectedName || deactivateConfirmation.trim() !== expectedName) {
+      setDeactivateError('Digite o nome da empresa exatamente como exibido.');
+      return;
+    }
+    if (!deactivatePassword) {
+      setDeactivateError('Informe sua senha para confirmar.');
+      return;
+    }
+
+    setDeactivatingCompany(true);
+    setDeactivateError('');
+    try {
+      await companyService.deactivateMine({ password: deactivatePassword });
+      sessionStorage.setItem(
+        'bnfix_auth_notice',
+        `${expectedName} foi desativada. Seu CPF e sua conta foram preservados: entre em outra empresa ou use “Cadastre-se” com os mesmos dados para criar uma nova.`,
+      );
+      logout();
+    } catch (err: any) {
+      const status = err?.response?.status;
+      const backendMsg: string = err?.response?.data?.message ?? err?.response?.data?.detail ?? '';
+      if (backendMsg.toLowerCase().includes('only the company owner')) {
+        setDeactivateError('Apenas o gestor proprietário pode desativar esta empresa.');
+      } else if (status === 401 || backendMsg.toLowerCase().includes('password is incorrect')) {
+        setDeactivateError('Senha incorreta. Verifique e tente novamente.');
+      } else {
+        setDeactivateError(backendMsg || 'Não foi possível desativar a empresa. Tente novamente.');
+      }
+    } finally {
+      setDeactivatingCompany(false);
+    }
+  };
 
 
   // ── filtros ────────────────────────────────────────────────────────────────
@@ -540,6 +606,155 @@ export const DashboardRH: React.FC = () => {
           )}
         </div>
       </div>
+
+
+      {/* ── Zona de perigo ─────────────────────────────────────────────────── */}
+      {company?.owner && (
+        <section
+          aria-labelledby="company-danger-title"
+          className="rounded-2xl border border-red-200 bg-white p-6 shadow-sm dark:border-red-900/60 dark:bg-slate-900"
+        >
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-start gap-3">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-50 text-red-600 dark:bg-red-950/40 dark:text-red-300">
+                <ShieldAlert className="h-5 w-5" />
+              </span>
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-red-600 dark:text-red-300">
+                  Zona de perigo
+                </p>
+                <h3 id="company-danger-title" className="mt-1 text-base font-bold text-slate-800 dark:text-slate-100">
+                  Desativar esta empresa
+                </h3>
+                <p className="mt-1 max-w-2xl text-xs leading-5 text-slate-500 dark:text-slate-400">
+                  Encerra o acesso à empresa {company?.name ?? user?.companyName ?? 'atual'} para gestores e colaboradores.
+                  Sua conta pessoal não será excluída e poderá continuar vinculada a outras empresas.
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setDeactivateError('');
+                setDeactivateModalOpen(true);
+              }}
+              className="h-10 shrink-0 rounded-lg border border-red-300 px-4 text-sm font-semibold text-red-700 hover:bg-red-50 dark:border-red-800 dark:text-red-300 dark:hover:bg-red-950/30"
+            >
+              Desativar empresa
+            </button>
+          </div>
+        </section>
+      )}
+
+
+      {/* ── Modal: Desativar empresa ───────────────────────────────────────── */}
+      {company?.owner && deactivateModalOpen && (
+        <div
+          className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) closeDeactivateModal();
+          }}
+        >
+          <div
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="deactivate-company-title"
+            aria-describedby="deactivate-company-description"
+            className="relative w-full max-w-md rounded-2xl border border-red-200 bg-white p-6 text-left shadow-2xl dark:border-red-900/60 dark:bg-slate-900"
+          >
+            <button
+              type="button"
+              onClick={closeDeactivateModal}
+              disabled={deactivatingCompany}
+              aria-label="Fechar"
+              className="absolute right-4 top-4 rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 disabled:opacity-50 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+            >
+              <X className="h-5 w-5" />
+            </button>
+
+            <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-red-50 text-red-600 dark:bg-red-950/40 dark:text-red-300">
+              <ShieldAlert className="h-5 w-5" />
+            </span>
+            <h2 id="deactivate-company-title" className="mt-4 pr-8 text-xl font-semibold tracking-tight text-slate-900 dark:text-white">
+              Desativar {company?.name ?? user?.companyName ?? 'esta empresa'}?
+            </h2>
+            <p id="deactivate-company-description" className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
+              Esta ação bloqueia o espaço da empresa e encerra sua sessão. Para evitar uma desativação acidental,
+              confirme o nome da empresa e sua senha.
+            </p>
+
+            <form onSubmit={handleDeactivateCompany} className="mt-6 space-y-4">
+              {deactivateError && (
+                <div role="alert" className="flex items-start gap-2.5 rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-red-700 dark:border-red-900/60 dark:bg-red-950/30 dark:text-red-300">
+                  <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                  <span>{deactivateError}</span>
+                </div>
+              )}
+
+              <div className="space-y-1.5">
+                <label htmlFor="company-name-confirmation" className="text-sm font-medium text-slate-800 dark:text-slate-200">
+                  Digite <strong>{company?.name ?? user?.companyName}</strong> para confirmar
+                </label>
+                <input
+                  id="company-name-confirmation"
+                  type="text"
+                  autoFocus
+                  autoComplete="off"
+                  disabled={deactivatingCompany}
+                  value={deactivateConfirmation}
+                  onChange={(event) => {
+                    setDeactivateConfirmation(event.target.value);
+                    setDeactivateError('');
+                  }}
+                  className="h-11 w-full rounded-lg border border-slate-300 bg-white px-3.5 text-sm text-slate-900 outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/15 disabled:opacity-60 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label htmlFor="company-deactivation-password" className="text-sm font-medium text-slate-800 dark:text-slate-200">
+                  Sua senha
+                </label>
+                <input
+                  id="company-deactivation-password"
+                  type="password"
+                  autoComplete="current-password"
+                  disabled={deactivatingCompany}
+                  value={deactivatePassword}
+                  onChange={(event) => {
+                    setDeactivatePassword(event.target.value);
+                    setDeactivateError('');
+                  }}
+                  placeholder="••••••••"
+                  className="h-11 w-full rounded-lg border border-slate-300 bg-white px-3.5 text-sm text-slate-900 outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/15 disabled:opacity-60 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                />
+              </div>
+
+              <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end">
+                <button
+                  type="button"
+                  onClick={closeDeactivateModal}
+                  disabled={deactivatingCompany}
+                  className="h-10 rounded-lg border border-slate-200 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={
+                    deactivatingCompany ||
+                    !deactivatePassword ||
+                    deactivateConfirmation.trim() !== (company?.name ?? user?.companyName ?? '')
+                  }
+                  className="flex h-10 items-center justify-center gap-2 rounded-lg bg-red-600 px-5 text-sm font-semibold text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {deactivatingCompany && <Loader2 className="h-4 w-4 animate-spin" />}
+                  {deactivatingCompany ? 'Desativando...' : 'Desativar empresa'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
 
       {/* ── Modal: Novo Colaborador ───────────────────────────────────────── */}

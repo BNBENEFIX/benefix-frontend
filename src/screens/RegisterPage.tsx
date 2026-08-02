@@ -120,7 +120,7 @@ const inputCls = (hasError?: string) =>
 
 const PasswordStrength: React.FC<{ password: string }> = ({ password }) => {
   const checks = [
-    password.length >= 8,
+    password.length >= 10,
     /[A-Z]/.test(password),
     /[0-9]/.test(password),
     /[^A-Za-z0-9]/.test(password),
@@ -215,7 +215,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
     if (!managerName.trim())              e.managerName = 'Informe o nome completo.';
     if (!isValidCpf(cpfDigits))           e.cpf = 'CPF inválido — informe os 11 dígitos.';
     if (!isValidEmail(email))             e.email = 'E-mail inválido.';
-    if (password.length < 8)              e.password = 'A senha deve ter pelo menos 8 caracteres.';
+    if (password.length < 10)             e.password = 'A senha deve ter pelo menos 10 caracteres.';
     if (password !== confirmPassword)     e.confirmPassword = 'As senhas não coincidem.';
     setErrors(e);
     return Object.keys(e).length === 0;
@@ -249,8 +249,13 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
     } catch (err: any) {
       const status = err?.response?.status;
       const detail = err?.response?.data?.message ?? err?.response?.data?.detail ?? '';
-      if (status === 409) {
+      const normalizedDetail = detail.toLowerCase();
+      if (normalizedDetail.includes('manager identity or credentials')) {
+        setApiError('Já existe uma conta com este CPF ou e-mail. Use os mesmos dados e a mesma senha para vincular outra empresa.');
+      } else if (status === 409) {
         setApiError('Empresa ou e-mail já cadastrado. Verifique os dados ou faça login.');
+      } else if (normalizedDetail.includes('cnpj already')) {
+        setApiError('Este CNPJ já está cadastrado. Entre na conta existente para continuar.');
       } else if (status === 400) {
         setApiError(detail || 'Dados inválidos. Revise as informações e tente novamente.');
       } else {
@@ -271,10 +276,10 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
             <CheckCircle2 className="w-9 h-9 text-emerald-500" />
           </div>
           <h2 className="font-black text-xl text-slate-800 dark:text-slate-100 mb-2">
-            Cadastro realizado!
+            Empresa vinculada com sucesso!
           </h2>
           <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">
-            Empresa e conta de acesso criados com sucesso. Redirecionando para o login...
+            Você já pode entrar com seus dados de acesso. Redirecionando para o login...
           </p>
           <div className="flex justify-center">
             <Loader2 className="w-5 h-5 animate-spin text-emerald-500" />
@@ -412,7 +417,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
                 <div className="relative">
                   <input
                     type={showPwd ? 'text' : 'password'}
-                    placeholder="Mínimo 8 caracteres"
+                    placeholder="Mínimo 10 caracteres"
                     value={password}
                     onChange={(e) => {
                       setPassword(e.target.value);

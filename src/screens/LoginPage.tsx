@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { LogIn, Eye, EyeOff, AlertCircle, Loader2, Check, ShieldCheck } from 'lucide-react';
 
@@ -14,7 +14,16 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess, onNavigate
   const [password, setPassword] = useState('');
   const [showPwd,  setShowPwd]  = useState(false);
   const [error,    setError]    = useState('');
+  const [notice,   setNotice]   = useState('');
   const [loading,  setLoading]  = useState(false);
+
+  useEffect(() => {
+    const storedNotice = sessionStorage.getItem('bnfix_auth_notice');
+    if (storedNotice) {
+      setNotice(storedNotice);
+      sessionStorage.removeItem('bnfix_auth_notice');
+    }
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -92,6 +101,13 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess, onNavigate
               Use o e-mail corporativo cadastrado pela sua empresa.
             </p>
           </div>
+
+          {notice && (
+            <div role="status" className="mb-5 flex items-start gap-2.5 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-800 dark:border-emerald-900/60 dark:bg-emerald-950/30 dark:text-emerald-300">
+              <Check className="mt-0.5 h-4 w-4 shrink-0" />
+              <span>{notice}</span>
+            </div>
+          )}
 
           {error && (
             <div role="alert" className="mb-5 flex items-start gap-2.5 rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-red-700">

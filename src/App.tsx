@@ -64,7 +64,10 @@ const AuthenticatedApp: React.FC = () => {
         </div>
       )}
 
-      <main className="flex-1 bg-[var(--canvas)] transition-colors">
+      <main
+        key={`${user?.role ?? 'anonymous'}:${user?.companyId ?? 'no-company'}`}
+        className="flex-1 bg-[var(--canvas)] transition-colors"
+      >
         {isEmployee
           ? <SharedBenefitsHub />
           : activeTab === 'catalog'
@@ -81,7 +84,6 @@ type AuthScreen = 'login' | 'register';
 
 const AppContent: React.FC<{ initialAuthScreen?: AuthScreen }> = ({ initialAuthScreen = 'login' }) => {
   const { user, loading } = useAuth();
-  const [loggedIn, setLoggedIn]     = useState(false);
   const [authScreen, setAuthScreen] = useState<AuthScreen>(initialAuthScreen);
 
   // Spinner global enquanto carrega sessão
@@ -98,8 +100,9 @@ const AppContent: React.FC<{ initialAuthScreen?: AuthScreen }> = ({ initialAuthS
     );
   }
 
-  // Se há usuário autenticado (via token JWT salvo) ou acabou de logar
-  if (user || loggedIn) {
+  // A presença do usuário no contexto é a única fonte de verdade da sessão.
+  // Assim logout e desativação sempre retornam corretamente ao login.
+  if (user) {
     return <AuthenticatedApp />;
   }
 
@@ -116,7 +119,7 @@ const AppContent: React.FC<{ initialAuthScreen?: AuthScreen }> = ({ initialAuthS
   // Tela de login (com link para cadastro)
   return (
     <LoginPage
-      onLoginSuccess={() => setLoggedIn(true)}
+      onLoginSuccess={() => setAuthScreen('login')}
       onNavigateToRegister={() => setAuthScreen('register')}
     />
   );
