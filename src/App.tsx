@@ -9,15 +9,16 @@ import { DashboardSupplier } from './screens/DashboardSupplier';
 import { DashboardRH } from './screens/DashboardRH';
 import { SharedBenefitsHub } from './screens/SharedBenefitsHub';
 import { BenefitsCatalog } from './screens/BenefitsCatalog';
+import { CompanyProfile } from './screens/CompanyProfile';
 import { ProviderBenefitsConsole } from './components/ProviderBenefitsConsole';
-import { LayoutDashboard, ShoppingBag, Loader2 } from 'lucide-react';
+import { Building2, LayoutDashboard, ShoppingBag, Loader2 } from 'lucide-react';
 
 // ── Conteúdo principal (autenticado) ─────────────────────────────────────────
 
 const AuthenticatedApp: React.FC = () => {
   const { user } = useAuth();
   const isEmployee = user?.role === 'EMPLOYEE';
-  const [activeTab, setActiveTab] = useState<'catalog' | 'dashboard'>(
+  const [activeTab, setActiveTab] = useState<'catalog' | 'dashboard' | 'company'>(
     isEmployee ? 'catalog' : 'dashboard',
   );
 
@@ -60,6 +61,15 @@ const AuthenticatedApp: React.FC = () => {
               <ShoppingBag className="h-4 w-4" />
               <span>{user?.role === 'COMPANY' ? 'Benefícios' : 'Catálogo'}</span>
             </button>
+            {user?.role === 'COMPANY' && (
+              <button
+                onClick={() => setActiveTab('company')}
+                className={`flex h-10 items-center gap-2 rounded-lg px-4 transition-colors ${tabClass('company')}`}
+              >
+                <Building2 className="h-4 w-4" />
+                <span>Empresa</span>
+              </button>
+            )}
           </div>
         </div>
       )}
@@ -72,6 +82,8 @@ const AuthenticatedApp: React.FC = () => {
           ? <SharedBenefitsHub />
           : activeTab === 'catalog'
             ? <BenefitsCatalog />
+            : activeTab === 'company' && user?.role === 'COMPANY'
+              ? <CompanyProfile />
             : renderDashboard()}
       </main>
     </div>

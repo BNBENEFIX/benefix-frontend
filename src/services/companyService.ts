@@ -12,6 +12,7 @@ import type {
   BackendCompany,
   CreateCompanyPayload,
   DeactivateCompanyPayload,
+  UpdateCompanyPayload,
 } from '../types';
 
 export const companyService = {
@@ -30,6 +31,12 @@ export const companyService = {
   /** Retorna os dados da empresa vinculada ao manager autenticado */
   getMyCompany: async (): Promise<BackendCompany> => {
     const { data } = await bnfixApi.get<BackendCompany>('/companies/me');
+    return data;
+  },
+
+  /** Atualiza os dados editáveis do tenant atual. O CNPJ é imutável. */
+  updateMine: async (payload: UpdateCompanyPayload): Promise<BackendCompany> => {
+    const { data } = await bnfixApi.put<BackendCompany>('/companies/me', payload);
     return data;
   },
 

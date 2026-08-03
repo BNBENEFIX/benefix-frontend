@@ -77,9 +77,10 @@ export interface BackendEmployee {
 export interface BackendManager {
   id: number;
   name: string;
-  cpf: string;
+  cpf?: string;
   email: string;
   companyId: number;
+  active?: boolean;
 }
 
 export interface BackendCompany {
@@ -98,6 +99,20 @@ export interface CreateCompanyPayload {
 
 export interface DeactivateCompanyPayload {
   password: string;
+}
+
+export interface UpdateCompanyPayload {
+  name: string;
+}
+
+export interface UpdateManagerEmailPayload {
+  email: string;
+  currentPassword: string;
+}
+
+export interface ChangeManagerPasswordPayload {
+  currentPassword: string;
+  newPassword: string;
 }
 
 export interface BackendPartnership {
