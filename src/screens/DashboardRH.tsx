@@ -2,12 +2,14 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { employeeService } from '../services/employeeService';
 import { companyService } from '../services/companyService';
-import { announcementService, metricsService } from '../services/api';
-import type { BackendEmployee, BackendCompany, Announcement } from '../types';
+import { announcementService } from '../services/announcementService';
+import { metricsService } from '../services/api';
+import type { BackendEmployee, BackendCompany, ManagerAnnouncement } from '../types';
 import {
   Users, UserPlus, UserCheck, UserX, Building2, Send,
   RefreshCw, Search, ChevronDown, ChevronUp, X, AlertCircle,
-  CheckCircle2, FileSpreadsheet, Activity, Heart, ShieldAlert, Loader2
+  CheckCircle2, FileSpreadsheet, Activity, Heart, ShieldAlert, Loader2,
+  Megaphone
 } from 'lucide-react';
 import { Toast } from '../components/Toast';
 
@@ -21,6 +23,8 @@ interface NewEmployeeForm {
 }
 
 const EMPTY_FORM: NewEmployeeForm = { name: '', cpf: '', email: '', password: '' };
+const ANNOUNCEMENT_TITLE_MAX_LENGTH = 160;
+const ANNOUNCEMENT_CONTENT_MAX_LENGTH = 4_000;
 
 // ─── Helper: verifica se o employee está ativo ───────────────────────────────
 // O backend pode retornar active como boolean (true/false) ou string ("DISABLED", "ACTIVE")
@@ -53,7 +57,7 @@ export const DashboardRH: React.FC = () => {
   // dados da API
   const [employees, setEmployees]   = useState<BackendEmployee[]>([]);
   const [company, setCompany]       = useState<BackendCompany | null>(null);
-  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [announcements, setAnnouncements] = useState<ManagerAnnouncement[]>([]);
   const [metrics, setMetrics]       = useState<any>(null);
 
   // estado da UI
@@ -77,6 +81,10 @@ export const DashboardRH: React.FC = () => {
   // comunicado
   const [annTitle, setAnnTitle]     = useState('');
   const [annContent, setAnnContent] = useState('');
+  const [announcementsLoading, setAnnouncementsLoading] = useState(true);
+  const [announcementsError, setAnnouncementsError] = useState('');
+  const [announcementFormError, setAnnouncementFormError] = useState('');
+  const [publishingAnnouncement, setPublishingAnnouncement] = useState(false);
 
   const [toast, setToast] = useState({ visible: false, message: '', type: 'success' as 'success' | 'error' | 'info' });
   const showToast = (message: string, type: 'success' | 'error' | 'info' = 'success') =>
@@ -85,14 +93,31 @@ export const DashboardRH: React.FC = () => {
 
   // ── carregamento de dados ──────────────────────────────────────────────────
 
+  const loadAnnouncements = useCallback(async () => {
+    setAnnouncementsLoading(true);
+    setAnnouncementsError('');
+    try {
+      const result = await announcementService.listCompany(0, 20);
+      setAnnouncements(result.items);
+    } catch (error: any) {
+      const backendMessage: string = error?.response?.data?.message
+        ?? error?.response?.data?.detail
+        ?? '';
+      setAnnouncementsError(
+        backendMessage || 'Não foi possível carregar os comunicados. Tente novamente.',
+      );
+    } finally {
+      setAnnouncementsLoading(false);
+    }
+  }, []);
+
   const loadData = useCallback(async () => {
     setLoading(true);
     setListError(null);
     try {
-      const [emps, comp, anns, met] = await Promise.allSettled([
+      const [emps, comp, met] = await Promise.allSettled([
         employeeService.list(),
         companyService.getMyCompany(),
-        announcementService.getAnnouncements(),
         metricsService.getDashboardMetrics(),
       ]);
 
@@ -108,7 +133,6 @@ export const DashboardRH: React.FC = () => {
       }
 
       if (comp.status === 'fulfilled')  setCompany(comp.value);
-      if (anns.status === 'fulfilled')  setAnnouncements(anns.value);
       if (met.status === 'fulfilled')   setMetrics(met.value);
     } catch (err) {
       console.error('[DashboardRH] loadData erro inesperado:', err);
@@ -117,7 +141,10 @@ export const DashboardRH: React.FC = () => {
     }
   }, []);
 
-  useEffect(() => { loadData(); }, [loadData]);
+  useEffect(() => {
+    void loadData();
+    void loadAnnouncements();
+  }, [loadAnnouncements, loadData]);
 
   useEffect(() => {
     if (!deactivateModalOpen) return;
@@ -241,17 +268,49 @@ export const DashboardRH: React.FC = () => {
 
   const handleCreateAnnouncement = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!annTitle || !annContent) return;
+    const title = annTitle.trim();
+    const content = annContent.trim();
+
+    setAnnouncementFormError('');
+    if (!title || !content) {
+      setAnnouncementFormError('Preencha o título e a mensagem antes de publicar.');
+      return;
+    }
+    if (title.length > ANNOUNCEMENT_TITLE_MAX_LENGTH) {
+      setAnnouncementFormError(`O título deve ter até ${ANNOUNCEMENT_TITLE_MAX_LENGTH} caracteres.`);
+      return;
+    }
+    if (content.length > ANNOUNCEMENT_CONTENT_MAX_LENGTH) {
+      setAnnouncementFormError(`A mensagem deve ter até ${ANNOUNCEMENT_CONTENT_MAX_LENGTH.toLocaleString('pt-BR')} caracteres.`);
+      return;
+    }
+
+    setPublishingAnnouncement(true);
     try {
-      const added = await announcementService.createAnnouncement({
-        title: annTitle, content: annContent,
-        author: user?.name ?? 'RH',
-        companyId: company ? String(company.id) : '',
-      });
-      setAnnouncements([added, ...announcements]);
-      setAnnTitle(''); setAnnContent('');
-      showToast('Comunicado publicado no feed de todos os colaboradores.');
-    } catch { showToast('Falha ao publicar comunicado.', 'error'); }
+      const added = await announcementService.create({ title, content });
+      setAnnouncements((current) => [
+        added,
+        ...current.filter((announcement) => announcement.id !== added.id),
+      ].slice(0, 20));
+      setAnnTitle('');
+      setAnnContent('');
+      setAnnouncementsError('');
+      showToast(
+        added.recipientCount === 0
+          ? 'Comunicado publicado. Não há colaboradores ativos para recebê-lo agora.'
+          : `Comunicado publicado para ${added.recipientCount} ${added.recipientCount === 1 ? 'colaborador' : 'colaboradores'}.`,
+      );
+    } catch (error: any) {
+      const backendMessage: string = error?.response?.data?.message
+        ?? error?.response?.data?.detail
+        ?? '';
+      setAnnouncementFormError(
+        backendMessage || 'Não foi possível publicar o comunicado. Tente novamente.',
+      );
+      showToast('O comunicado não foi publicado.', 'error');
+    } finally {
+      setPublishingAnnouncement(false);
+    }
   };
 
   const handleExportReport = (format: 'PDF' | 'EXCEL') =>
@@ -560,52 +619,170 @@ export const DashboardRH: React.FC = () => {
       </div>
 
 
-      {/* ── Comunicados + anúncios ───────────────────────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-
-        {/* Publicar comunicado */}
-        <div className="p-6 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 rounded-2xl space-y-4 shadow-sm flex flex-col">
-          <div>
-            <h4 className="font-bold text-md text-slate-800 dark:text-slate-100">Publicar Comunicado Interno</h4>
-            <p className="text-xs text-slate-400 mt-0.5">Informe novidades e campanhas de saúde para todos os colaboradores.</p>
+      {/* ── Comunicados internos ──────────────────────────────────────────── */}
+      <section aria-labelledby="announcements-section-title" className="grid grid-cols-1 gap-8 lg:grid-cols-2">
+        <div className="flex flex-col rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+          <div className="flex items-start gap-3">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300">
+              <Send className="h-4.5 w-4.5" aria-hidden="true" />
+            </span>
+            <div>
+              <h4 id="announcements-section-title" className="text-md font-bold text-slate-800 dark:text-slate-100">
+                Publicar comunicado interno
+              </h4>
+              <p className="mt-0.5 text-xs leading-5 text-slate-400">
+                A mensagem será entregue aos colaboradores ativos desta empresa.
+              </p>
+            </div>
           </div>
-          <form onSubmit={handleCreateAnnouncement} className="space-y-3 flex-1">
-            <input type="text" required placeholder="Título do comunicado..."
-              value={annTitle} onChange={e => setAnnTitle(e.target.value)}
-              className="w-full p-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl outline-none text-xs text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:border-emerald-500 transition-all" />
-            <textarea rows={4} required placeholder="Mensagem para os colaboradores..."
-              value={annContent} onChange={e => setAnnContent(e.target.value)}
-              className="w-full p-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl outline-none text-xs text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:border-emerald-500 transition-all resize-none" />
-            <button type="submit"
-              className="w-full py-2 bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs rounded-xl shadow flex items-center justify-center gap-1.5 cursor-pointer">
-              <Send className="w-3.5 h-3.5" /> Publicar Comunicado
+
+          <form onSubmit={handleCreateAnnouncement} className="mt-5 flex flex-1 flex-col gap-4">
+            {announcementFormError && (
+              <div role="alert" className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 p-3 text-xs leading-5 text-red-700 dark:border-red-900/60 dark:bg-red-950/30 dark:text-red-300">
+                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+                <span>{announcementFormError}</span>
+              </div>
+            )}
+
+            <div>
+              <div className="mb-1.5 flex items-center justify-between gap-3">
+                <label htmlFor="announcement-title" className="text-xs font-semibold text-slate-700 dark:text-slate-200">
+                  Título
+                </label>
+                <span className="text-[10px] tabular-nums text-slate-400" aria-hidden="true">
+                  {annTitle.length}/{ANNOUNCEMENT_TITLE_MAX_LENGTH}
+                </span>
+              </div>
+              <input
+                id="announcement-title"
+                type="text"
+                required
+                maxLength={ANNOUNCEMENT_TITLE_MAX_LENGTH}
+                disabled={publishingAnnouncement}
+                placeholder="Ex.: Horário especial no feriado"
+                value={annTitle}
+                onChange={(event) => {
+                  setAnnTitle(event.target.value);
+                  setAnnouncementFormError('');
+                }}
+                className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 text-sm text-slate-800 outline-none placeholder:text-slate-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15 disabled:opacity-60 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-100"
+              />
+            </div>
+
+            <div className="flex-1">
+              <div className="mb-1.5 flex items-center justify-between gap-3">
+                <label htmlFor="announcement-content" className="text-xs font-semibold text-slate-700 dark:text-slate-200">
+                  Mensagem
+                </label>
+                <span className="text-[10px] tabular-nums text-slate-400" aria-hidden="true">
+                  {annContent.length}/{ANNOUNCEMENT_CONTENT_MAX_LENGTH.toLocaleString('pt-BR')}
+                </span>
+              </div>
+              <textarea
+                id="announcement-content"
+                rows={5}
+                required
+                maxLength={ANNOUNCEMENT_CONTENT_MAX_LENGTH}
+                disabled={publishingAnnouncement}
+                placeholder="Escreva o aviso que o time receberá..."
+                value={annContent}
+                onChange={(event) => {
+                  setAnnContent(event.target.value);
+                  setAnnouncementFormError('');
+                }}
+                className="w-full resize-y rounded-xl border border-slate-200 bg-slate-50 p-3.5 text-sm leading-6 text-slate-800 outline-none placeholder:text-slate-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15 disabled:opacity-60 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-100"
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={publishingAnnouncement || !annTitle.trim() || !annContent.trim()}
+              className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-55"
+            >
+              {publishingAnnouncement
+                ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                : <Send className="h-4 w-4" aria-hidden="true" />}
+              {publishingAnnouncement ? 'Publicando...' : 'Publicar comunicado'}
             </button>
           </form>
         </div>
 
-        {/* Listagem dos últimos comunicados */}
-        <div className="p-6 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 rounded-2xl space-y-4 shadow-sm">
-          <h4 className="font-bold text-md text-slate-800 dark:text-slate-100">Comunicados Recentes</h4>
-          {announcements.length === 0 ? (
-            <div className="p-6 text-center border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-xl">
-              <p className="text-xs text-slate-400">Nenhum comunicado publicado ainda.</p>
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h4 className="text-md font-bold text-slate-800 dark:text-slate-100">Comunicados recentes</h4>
+              <p className="mt-0.5 text-xs leading-5 text-slate-400">
+                Histórico das últimas mensagens enviadas para o time.
+              </p>
+            </div>
+            {!announcementsLoading && !announcementsError && announcements.length > 0 && (
+              <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-bold text-slate-500 dark:bg-slate-800 dark:text-slate-300">
+                {announcements.length} {announcements.length === 1 ? 'envio' : 'envios'}
+              </span>
+            )}
+          </div>
+
+          {announcementsLoading ? (
+            <div role="status" className="flex min-h-56 flex-col items-center justify-center gap-3 text-xs text-slate-400">
+              <Loader2 className="h-6 w-6 animate-spin text-emerald-600" aria-hidden="true" />
+              Carregando comunicados...
+            </div>
+          ) : announcementsError ? (
+            <div className="mt-5 flex min-h-52 flex-col items-center justify-center rounded-xl border border-red-200 bg-red-50/50 p-6 text-center dark:border-red-900/50 dark:bg-red-950/20">
+              <AlertCircle className="h-6 w-6 text-red-600 dark:text-red-300" aria-hidden="true" />
+              <p role="alert" className="mt-3 text-xs leading-5 text-red-700 dark:text-red-300">
+                {announcementsError}
+              </p>
+              <button
+                type="button"
+                onClick={() => void loadAnnouncements()}
+                className="mt-3 flex items-center gap-1.5 rounded-lg border border-red-200 bg-white px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-50 dark:border-red-800 dark:bg-slate-900 dark:text-red-300 dark:hover:bg-red-950/30"
+              >
+                <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />
+                Tentar novamente
+              </button>
+            </div>
+          ) : announcements.length === 0 ? (
+            <div className="mt-5 flex min-h-52 flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-200 p-6 text-center dark:border-slate-800">
+              <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300">
+                <Megaphone className="h-5 w-5" aria-hidden="true" />
+              </span>
+              <p className="mt-3 text-xs font-semibold text-slate-700 dark:text-slate-200">
+                Nenhum comunicado publicado
+              </p>
+              <p className="mt-1 text-[11px] leading-5 text-slate-400">
+                Use o formulário ao lado para enviar o primeiro aviso.
+              </p>
             </div>
           ) : (
-            <div className="space-y-3 max-h-64 overflow-y-auto pr-1">
-              {announcements.slice(0, 6).map(ann => (
-                <div key={ann.id} className="p-3 border border-slate-100 dark:border-slate-800 rounded-xl bg-slate-50/30 dark:bg-slate-950/20 space-y-1">
-                  <h5 className="font-bold text-xs text-slate-800 dark:text-slate-100 leading-tight">{ann.title}</h5>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2">{ann.content}</p>
-                  <div className="flex items-center justify-between pt-1">
-                    <span className="text-[10px] text-slate-400">{ann.author}</span>
-                    <span className="text-[10px] text-slate-400">{new Date(ann.publishedAt).toLocaleDateString('pt-BR')}</span>
+            <ol className="mt-5 max-h-[380px] space-y-3 overflow-y-auto pr-1" aria-label="Comunicados publicados recentemente">
+              {announcements.slice(0, 6).map((announcement) => (
+                <li key={announcement.id} className="rounded-xl border border-slate-100 bg-slate-50/50 p-4 dark:border-slate-800 dark:bg-slate-950/20">
+                  <h5 className="text-xs font-bold leading-5 text-slate-800 dark:text-slate-100">
+                    {announcement.title}
+                  </h5>
+                  <p className="mt-1 line-clamp-2 text-[11px] leading-5 text-slate-500 dark:text-slate-400">
+                    {announcement.content}
+                  </p>
+                  <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-slate-200/70 pt-2.5 text-[10px] text-slate-400 dark:border-slate-800">
+                    <span className="flex min-w-0 items-center gap-1.5">
+                      <Users className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                      {announcement.recipientCount} {announcement.recipientCount === 1 ? 'destinatário' : 'destinatários'}
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                      <span className="max-w-28 truncate">{announcement.author}</span>
+                      <span aria-hidden="true">·</span>
+                      <time dateTime={announcement.publishedAt}>
+                        {new Date(announcement.publishedAt).toLocaleDateString('pt-BR')}
+                      </time>
+                    </span>
                   </div>
-                </div>
+                </li>
               ))}
-            </div>
+            </ol>
           )}
         </div>
-      </div>
+      </section>
 
 
       {/* ── Zona de perigo ─────────────────────────────────────────────────── */}

@@ -179,20 +179,6 @@ export interface Benefit {
   providerName?: string;
 }
 
-export interface BenefitRequest {
-  id: string;
-  benefitId: string;
-  benefitName: string;
-  employeeId: string;
-  employeeName: string;
-  companyId: string;
-  category: BenefitCategory;
-  requestedAt: string;
-  status: 'Pendente' | 'Em análise' | 'Aprovado' | 'Rejeitado';
-  approvedAt?: string;
-  justification?: string;
-}
-
 export interface Coupon {
   id: string;
   benefitId: string;
@@ -232,13 +218,37 @@ export interface Supplier {
   status: 'Ativo' | 'Pendente' | 'Suspenso';
 }
 
-export interface Announcement {
-  id: string;
+export interface AnnouncementBase {
+  id: number;
   title: string;
   content: string;
   publishedAt: string;
-  companyId: string;
   author: string;
+}
+
+export interface ManagerAnnouncement extends AnnouncementBase {
+  recipientCount: number;
+}
+
+export interface EmployeeAnnouncement extends AnnouncementBase {
+  read: boolean;
+  readAt: string | null;
+}
+
+export interface AnnouncementPage<T> {
+  items: T[];
+  page: number;
+  size: number;
+  hasMore: boolean;
+}
+
+export interface CreateAnnouncementPayload {
+  title: string;
+  content: string;
+}
+
+export interface UnreadAnnouncementCount {
+  unreadCount: number;
 }
 
 export interface CalendarEvent {

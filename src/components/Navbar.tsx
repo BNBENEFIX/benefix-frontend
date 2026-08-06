@@ -14,6 +14,7 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { companyService } from '../services/companyService';
+import { AnnouncementCenter } from './AnnouncementCenter';
 
 const onlyDigits = (value: string) => value.replace(/\D/g, '');
 
@@ -63,6 +64,7 @@ export const Navbar: React.FC = () => {
   const companyMenuRef = useRef<HTMLDivElement>(null);
 
   const isManager = user?.role === 'COMPANY';
+  const isEmployee = user?.role === 'EMPLOYEE';
   const currentCompany = companies.find((item) => String(item.id) === user?.companyId);
   const currentCompanyName = currentCompany?.name ?? user?.companyName ?? 'Empresa atual';
 
@@ -321,6 +323,8 @@ export const Navbar: React.FC = () => {
           </div>
 
           <div className="flex shrink-0 items-center gap-1 sm:gap-3">
+            {isEmployee && <AnnouncementCenter />}
+
             <button
               onClick={toggleTheme}
               className="hidden rounded-lg p-2 text-[var(--muted)] hover:bg-[var(--surface-muted)] hover:text-[var(--ink)] sm:block"

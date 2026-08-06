@@ -1,7 +1,7 @@
 /**
  * Fachada de serviços — redireciona todas as chamadas para a API real BNFix
  * ou para o servidor Express local (chatbot/Gemini e funcionalidades sem
- * endpoint equivalente no backend real como surveys, announcements etc.).
+ * endpoint equivalente no backend real, como surveys).
  *
  * REGRAS:
  *  - Qualquer endpoint que EXISTE no Swagger de https://api.bnfix.com.br
@@ -12,17 +12,16 @@
 import axios from 'axios';
 import bnfixApi, { USER_KEY } from './bnfixApi';
 import { benefitService as realBenefitService } from './benefitService';
-import { subscriptionService } from './subscriptionService';
+import { sharedBenefitService } from './sharedBenefitService';
 import type {
   Benefit,
-  BenefitRequest,
   Coupon,
   Voucher,
-  Announcement,
   CalendarEvent,
   FeedbackRating,
   SurveyCampaign,
   SurveyResponse,
+  SharedBenefitRequest,
   User,
 } from '../types';
 
@@ -106,41 +105,27 @@ export const benefitService = {
   },
 };
 
-// ── REQUESTS (solicitações de benefícios) ─────────────────────────────────────
-// Não há endpoint específico no backend real — usa servidor local por enquanto.
-// Quando o usuário estiver autenticado como USER, usa /subscriptions da API real.
+// ── REQUESTS (solicitações de acesso a benefícios) ───────────────────────────
+// Usa a API real /benefit-requests. A empresa, o colaborador e o fornecedor
+// são derivados do JWT pelo backend — nenhuma identidade é enviada pelo navegador.
 
 export const requestService = {
-  getRequests: async (): Promise<BenefitRequest[]> => {
-    const res = await localApi.get<BenefitRequest[]>('/requests');
-    return res.data;
+  getRequests: async (): Promise<SharedBenefitRequest[]> => {
+    return sharedBenefitService.myRequests();
   },
 
-  createRequest: async (req: Partial<BenefitRequest>): Promise<BenefitRequest> => {
-    // Se o usuário tem token real, cria via /subscriptions na API real
-    const token = localStorage.getItem('bnfix_jwt_token');
-    if (token && req.benefitId) {
-      try {
-        await subscriptionService.subscribe({ benefitId: Number(req.benefitId) });
-      } catch (err) {
-        console.warn('[requestService] /subscriptions falhou, registrando local:', err);
-      }
-    }
-    // Registra também localmente para manter o histórico visível na UI
-    const res = await localApi.post<BenefitRequest>('/requests', req);
-    return res.data;
+  createRequest: async (req: { benefitId: number }): Promise<SharedBenefitRequest> => {
+    return sharedBenefitService.request(Number(req.benefitId));
   },
 
   updateRequestStatus: async (
-    id: string,
+    id: number,
     status: 'Aprovado' | 'Rejeitado',
     justification?: string,
-  ): Promise<BenefitRequest> => {
-    const res = await localApi.put<BenefitRequest>(`/requests/${id}`, {
-      status,
-      justification,
-    });
-    return res.data;
+  ): Promise<SharedBenefitRequest> => {
+    return status === 'Aprovado'
+      ? sharedBenefitService.approve(id)
+      : sharedBenefitService.reject(id, justification);
   },
 };
 
@@ -168,20 +153,6 @@ export const couponService = {
 
   createCoupon: async (coupon: Partial<Coupon>): Promise<Coupon> => {
     const res = await localApi.post<Coupon>('/coupons', coupon);
-    return res.data;
-  },
-};
-
-// ── ANNOUNCEMENTS ─────────────────────────────────────────────────────────────
-
-export const announcementService = {
-  getAnnouncements: async (): Promise<Announcement[]> => {
-    const res = await localApi.get<Announcement[]>('/announcements');
-    return res.data;
-  },
-
-  createAnnouncement: async (ann: Partial<Announcement>): Promise<Announcement> => {
-    const res = await localApi.post<Announcement>('/announcements', ann);
     return res.data;
   },
 };
@@ -287,6 +258,7 @@ export const userService = {
 
 export { employeeService } from './employeeService';
 export { companyService }  from './companyService';
+export { announcementService } from './announcementService';
 export { partnershipService } from './partnershipService';
 export { subscriptionService } from './subscriptionService';
 export { benefitService as realBenefitService } from './benefitService';

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { voucherService, couponService, requestService, rankingService, ratingService, surveyService, benefitService } from '../services/api';
-import { Voucher, Coupon, BenefitRequest, CalendarEvent, FeedbackRating, SurveyCampaign, SurveyResponse, Benefit } from '../types';
+import { Voucher, Coupon, SharedBenefitRequest, CalendarEvent, FeedbackRating, SurveyCampaign, SurveyResponse, Benefit } from '../types';
 import { 
   Trophy, Gift, Calendar, Bookmark, QrCode, FileText, ArrowRight, 
   Sparkles, CheckCircle2, Star, ThumbsUp, Send, RefreshCw, X
@@ -12,7 +12,7 @@ export const DashboardEmployee: React.FC = () => {
   const { user, refreshUserData } = useAuth();
   const [vouchers, setVouchers] = useState<Voucher[]>([]);
   const [coupons, setCoupons] = useState<Coupon[]>([]);
-  const [requests, setRequests] = useState<BenefitRequest[]>([]);
+  const [requests, setRequests] = useState<SharedBenefitRequest[]>([]);
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -52,7 +52,7 @@ export const DashboardEmployee: React.FC = () => {
       // Show user's related ones
       setVouchers(allV.filter(v => v.employeeId === user?.id));
       setCoupons(allC);
-      setRequests(allR.filter(r => r.employeeId === user?.id));
+      setRequests(allR);
       setEvents(allE);
       setBenefitsList(allB);
 
@@ -275,7 +275,7 @@ export const DashboardEmployee: React.FC = () => {
                 <thead>
                   <tr className="border-b border-slate-150 dark:border-slate-800 text-slate-400">
                     <th className="py-2.5 px-0.5 font-bold uppercase tracking-wider">Benefício</th>
-                    <th className="py-2.5 px-0.5 font-bold uppercase tracking-wider">Categoria</th>
+                    <th className="py-2.5 px-0.5 font-bold uppercase tracking-wider">Estabelecimento</th>
                     <th className="py-2.5 px-0.5 font-bold uppercase tracking-wider">Data do Pedido</th>
                     <th className="py-2.5 px-0.5 font-bold uppercase tracking-wider text-right">Status do RH</th>
                   </tr>
@@ -284,15 +284,19 @@ export const DashboardEmployee: React.FC = () => {
                   {requests.map((r) => (
                     <tr key={r.id}>
                       <td className="py-3 px-0.5 font-semibold text-slate-800 dark:text-slate-100">{r.benefitName}</td>
-                      <td className="py-3 px-0.5 font-mono text-[10px] text-slate-400">{r.category}</td>
+                      <td className="py-3 px-0.5 font-mono text-[10px] text-slate-400">{r.providerName}</td>
                       <td className="py-3 px-0.5">{new Date(r.requestedAt).toLocaleDateString('pt-BR')}</td>
                       <td className="py-3 px-0.5 text-right">
                         <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                          r.status === 'Aprovado' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30' :
-                          r.status === 'Rejeitado' ? 'bg-red-100 text-red-700 dark:bg-red-900/30' :
+                          r.status === 'APPROVED' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30' :
+                          r.status === 'REJECTED' ? 'bg-red-100 text-red-700 dark:bg-red-900/30' :
+                          r.status === 'CANCELLED' ? 'bg-slate-100 text-slate-500 dark:bg-slate-800' :
                           'bg-amber-100 text-amber-700 dark:bg-amber-900/30'
                         }`}>
-                          {r.status}
+                          {r.status === 'APPROVED' ? 'Aprovado' :
+                            r.status === 'REJECTED' ? 'Não aprovado' :
+                            r.status === 'CANCELLED' ? 'Cancelado' :
+                            'Aguardando resposta'}
                         </span>
                       </td>
                     </tr>
