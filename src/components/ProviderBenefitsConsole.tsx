@@ -17,7 +17,8 @@ import {
   X,
 } from 'lucide-react';
 import { sharedBenefitService } from '../services/sharedBenefitService';
-import type { RedemptionPreview, SharedBenefitRequest } from '../types';
+import { partnershipService } from '../services/partnershipService';
+import type { BackendPartnership, RedemptionPreview, SharedBenefitRequest } from '../types';
 
 type RedemptionState =
   | 'idle'
@@ -58,6 +59,11 @@ export function ProviderBenefitsConsole() {
   const [requestBusyId, setRequestBusyId] = useState<number | null>(null);
   const [requestMessage, setRequestMessage] = useState<RequestMessage | null>(null);
 
+  const [partnerships, setPartnerships] = useState<BackendPartnership[]>([]);
+  const [partnershipsLoading, setPartnershipsLoading] = useState(true);
+  const [partnershipBusyId, setPartnershipBusyId] = useState<number | null>(null);
+  const [partnershipMessage, setPartnershipMessage] = useState<RequestMessage | null>(null);
+
   const [token, setToken] = useState('');
   const [preview, setPreview] = useState<RedemptionPreview | null>(null);
   const [redemptionState, setRedemptionState] = useState<RedemptionState>('idle');
@@ -85,9 +91,21 @@ export function ProviderBenefitsConsole() {
     }
   }, []);
 
+  const loadPartnerships = useCallback(async () => {
+    setPartnershipsLoading(true);
+    try {
+      setPartnerships(await partnershipService.providerPending());
+    } catch {
+      setPartnerships([]);
+    } finally {
+      setPartnershipsLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     loadRequests();
-  }, [loadRequests]);
+    loadPartnerships();
+  }, [loadRequests, loadPartnerships]);
 
   useEffect(() => () => stopCamera(), [stopCamera]);
 
@@ -128,6 +146,34 @@ export function ProviderBenefitsConsole() {
       });
     } finally {
       setRequestBusyId(null);
+    }
+  };
+
+  const actOnPartnership = async (partnership: BackendPartnership, accepted: boolean) => {
+    setPartnershipBusyId(partnership.id);
+    setPartnershipMessage(null);
+    try {
+      if (accepted) {
+        await partnershipService.accept(partnership.id);
+      } else {
+        await partnershipService.reject(partnership.id);
+      }
+      setPartnershipMessage({
+        kind: 'success',
+        title: accepted ? 'Parceria aceita' : 'Parceria recusada',
+        detail: accepted
+          ? `${partnership.clientCompanyName} já pode oferecer ${partnership.benefitName}.`
+          : `A parceria com ${partnership.clientCompanyName} foi recusada.`,
+      });
+      await loadPartnerships();
+    } catch (error) {
+      setPartnershipMessage({
+        kind: 'error',
+        title: 'Não foi possível concluir',
+        detail: getApiMessage(error, 'Tente novamente em instantes.'),
+      });
+    } finally {
+      setPartnershipBusyId(null);
     }
   };
 
@@ -530,6 +576,92 @@ export function ProviderBenefitsConsole() {
                   >
                     {requestBusyId === request.id && <Loader2 className="h-4 w-4 animate-spin" />}
                     Aprovar
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+
+      <div className="mt-8 rounded-2xl border border-[#d5ddd8] bg-white p-5 text-[#18211d] sm:p-6">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[.14em] text-[#2f7658]">
+              Parcerias pendentes
+            </p>
+            <h2 className="mt-2 text-xl font-semibold">Pedidos de parceria recebidos</h2>
+            <p className="mt-1 text-sm text-[#68746d]">
+              Outras empresas pediram para oferecer seus benefícios. Aceite para liberar a oferta.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={loadPartnerships}
+            className="flex h-10 shrink-0 items-center gap-2 rounded-lg border border-[#d5ddd8] px-3 text-xs font-semibold text-[#536159] hover:bg-[#f3f6f3]"
+          >
+            <RefreshCw className={`h-4 w-4 ${partnershipsLoading ? 'animate-spin' : ''}`} />
+            <span className="hidden sm:inline">Atualizar</span>
+          </button>
+        </div>
+
+        {partnershipMessage && (
+          <div
+            role={partnershipMessage.kind === 'error' ? 'alert' : 'status'}
+            className={`mt-5 rounded-lg border px-4 py-3 ${
+              partnershipMessage.kind === 'error'
+                ? 'border-[#efc2bc] bg-[#fff1ef] text-[#8f3730]'
+                : 'border-[#b9d7c6] bg-[#eef5f0] text-[#235c46]'
+            }`}
+          >
+            <div className="text-sm font-semibold">{partnershipMessage.title}</div>
+            <div className="mt-1 text-xs opacity-85">{partnershipMessage.detail}</div>
+          </div>
+        )}
+
+        <div className="mt-5 divide-y divide-[#edf0ed]">
+          {partnershipsLoading ? (
+            <div role="status" className="flex items-center gap-3 py-8 text-sm text-[#68746d]">
+              <Loader2 className="h-5 w-5 animate-spin text-[#2f7658]" />
+              Carregando parcerias...
+            </div>
+          ) : partnerships.length === 0 ? (
+            <div className="py-8">
+              <p className="text-sm font-semibold">Nenhuma parceria pendente</p>
+              <p className="mt-1 text-sm text-[#68746d]">Novos pedidos aparecerão aqui.</p>
+            </div>
+          ) : (
+            partnerships.map((partnership) => (
+              <div
+                key={partnership.id}
+                className="grid gap-4 py-5 sm:grid-cols-[1fr_auto] sm:items-center"
+              >
+                <div>
+                  <div className="text-base font-semibold">{partnership.benefitName}</div>
+                  <div className="mt-1 text-sm text-[#68746d]">
+                    {partnership.clientCompanyName} quer oferecer este benefício aos seus
+                    colaboradores.
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    disabled={partnershipBusyId !== null}
+                    onClick={() => actOnPartnership(partnership, false)}
+                    className="h-11 rounded-lg border border-[#dfb9b4] px-4 text-sm font-semibold text-[#9d3d35] disabled:opacity-50"
+                  >
+                    Recusar
+                  </button>
+                  <button
+                    type="button"
+                    disabled={partnershipBusyId !== null}
+                    onClick={() => actOnPartnership(partnership, true)}
+                    className="flex h-11 items-center justify-center gap-2 rounded-lg bg-[#173f32] px-4 text-sm font-semibold text-white disabled:opacity-50"
+                  >
+                    {partnershipBusyId === partnership.id && (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    )}
+                    Aceitar
                   </button>
                 </div>
               </div>

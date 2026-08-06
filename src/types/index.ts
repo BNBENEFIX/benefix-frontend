@@ -117,9 +117,11 @@ export interface ChangeManagerPasswordPayload {
 
 export interface BackendPartnership {
   id: number;
+  clientCompanyId: number;
+  clientCompanyName: string;
   benefitId: number;
-  companyId: number;
-  status: 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'DISABLED';
+  benefitName: string;
+  status: 'PENDING' | 'ACTIVE' | 'REJECTED' | 'DISABLED';
   createdAt?: string;
 }
 
