@@ -1,43 +1,25 @@
 /**
  * Cliente HTTP principal para a API BNFix.
  *
- * - Base URL: proxy local do frontend (/api/bnfix)
- * - Autenticação: Bearer JWT armazenado no localStorage
- * - Interceptors: injeta token em todas as requests e trata erros 401/403
+ * - Base URL: https://api.bnfix.com.br (direto do browser)
+ * - Autenticação: cookie httpOnly `jwt` enviado automaticamente pelo browser
+ *   (withCredentials: true). Nenhum token vive no localStorage/JS.
+ * - Interceptors: trata erros 401/403 limpando a sessão
  */
-import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
+import axios, { AxiosError } from 'axios';
 
-const BASE_URL = '/api/bnfix';
-
-export const TOKEN_KEY = 'bnfix_jwt_token';
-export const USER_KEY  = 'bnfix_user';
+export const USER_KEY = 'bnfix_user';
+export const LAST_ACTIVITY_KEY = 'bnfix_last_activity';
 
 // ── Instância principal ──────────────────────────────────────────────────────
 
 const bnfixApi = axios.create({
-  baseURL: BASE_URL,
+  baseURL: process.env.NEXT_PUBLIC_API_URL ?? 'https://api.bnfix.com.br',
   headers: { 'Content-Type': 'application/json' },
-  // Não usamos withCredentials pois o cookie jwt é injetado manualmente
-  // no interceptor de request (o backend está em outro domínio via proxy)
-  withCredentials: false,
+  // Cookie httpOnly flui automaticamente entre bnfix.com.br e api.bnfix.com.br
+  // (mesmo site). Essencial para enviar o cookie cross-origin.
+  withCredentials: true,
   timeout: 15_000,
-});
-
-// ── Request interceptor ───────────────────────────────────────────────────────
-// Remove o header Cookie — browsers bloqueiam esse header manualmente
-// (erro "Foi negada a tentativa de definir um cabeçalho proibido: Cookie").
-// O backend Quarkus aceita autenticação via Authorization: Bearer <token>.
-
-bnfixApi.interceptors.request.use((config: InternalAxiosRequestConfig) => {
-  const token = localStorage.getItem(TOKEN_KEY);
-  const requestPath = config.url?.split('?')[0].replace(/\/+$/, '');
-  const isLoginRequest = requestPath === '/auth/login';
-
-  if (token && !isLoginRequest && config.headers) {
-    config.headers['Authorization'] = `Bearer ${token}`;
-    // NÃO setar config.headers['Cookie'] — header proibido em browsers
-  }
-  return config;
 });
 
 // ── Response interceptor: tratamento centralizado de erros ───────────────────
@@ -53,7 +35,7 @@ bnfixApi.interceptors.response.use(
       // Uma sessão rejeitada não deve continuar presa no navegador. O login
       // e confirmações por senha ficam de fora para preservar o erro no formulário.
       if (status === 401 && requestPath !== '/auth/login' && !isCredentialConfirmation) {
-        clearToken();
+        clearSession();
       }
     }
 
@@ -61,19 +43,15 @@ bnfixApi.interceptors.response.use(
   },
 );
 
-// ── Helpers de token ─────────────────────────────────────────────────────────
+// ── Helpers de sessão (sem token) ────────────────────────────────────────────
 
-export const setToken = (token: string) => {
-  localStorage.setItem(TOKEN_KEY, token);
-};
-
-export const clearToken = () => {
-  localStorage.removeItem(TOKEN_KEY);
+export const clearSession = () => {
   localStorage.removeItem(USER_KEY);
+  localStorage.removeItem(LAST_ACTIVITY_KEY);
 };
 
-export const getToken = (): string | null => {
-  return localStorage.getItem(TOKEN_KEY);
+export const hasSession = (): boolean => {
+  return localStorage.getItem(USER_KEY) !== null;
 };
 
 export default bnfixApi;

@@ -10,7 +10,7 @@
  *    → usa o proxy Express local (/api/*) temporariamente até o backend evoluir
  */
 import axios from 'axios';
-import bnfixApi, { USER_KEY } from './bnfixApi';
+import bnfixApi, { USER_KEY, hasSession } from './bnfixApi';
 import { benefitService as realBenefitService } from './benefitService';
 import { sharedBenefitService } from './sharedBenefitService';
 import type {
@@ -71,9 +71,8 @@ export const benefitService = {
   },
 
   createBenefit: async (payload: Partial<Benefit>): Promise<Benefit> => {
-    // Tenta API real primeiro
-    const token = localStorage.getItem('bnfix_jwt_token');
-    if (token && payload.companyId) {
+    // Usa a API real quando autenticado (cookie httpOnly); fallback local caso contrário.
+    if (hasSession() && payload.companyId) {
       return realBenefitService.create({
         name: payload.name ?? '',
         description: payload.description ?? '',
@@ -85,8 +84,7 @@ export const benefitService = {
   },
 
   updateBenefit: async (id: string, payload: Partial<Benefit>): Promise<Benefit> => {
-    const token = localStorage.getItem('bnfix_jwt_token');
-    if (token) {
+    if (hasSession()) {
       return realBenefitService.update(Number(id), {
         name:        payload.name,
         description: payload.description,
@@ -97,8 +95,7 @@ export const benefitService = {
   },
 
   deleteBenefit: async (id: string): Promise<void> => {
-    const token = localStorage.getItem('bnfix_jwt_token');
-    if (token) {
+    if (hasSession()) {
       return realBenefitService.delete(Number(id));
     }
     await localApi.delete(`/benefits/${id}`);

@@ -55,13 +55,13 @@ cp .env.example .env.local
 Configure as variáveis:
 
 ```env
-BNFIX_API_BASE_URL=http://localhost:8080
+NEXT_PUBLIC_API_URL=http://localhost:8080
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
 ```
 
 | Variável | Descrição |
 | --- | --- |
-| `BNFIX_API_BASE_URL` | Endereço interno do backend Quarkus usado pelo proxy do Next.js |
+| `NEXT_PUBLIC_API_URL` | Endereço do backend BNFix (chamado direto do browser) |
 | `NEXT_PUBLIC_SITE_URL` | Endereço público do frontend |
 
 Inicie o ambiente de desenvolvimento:
@@ -83,16 +83,17 @@ npm run start   # execução do build de produção
 
 ## Integração com o backend
 
-O navegador chama o proxy interno:
+O navegador chama a API diretamente:
 
 ```text
-/api/bnfix/*
+https://api.bnfix.com.br/*
 ```
 
-O Route Handler em `src/app/api/bnfix/[...path]/route.ts` encaminha as
-requisições para `BNFIX_API_BASE_URL`. O JWT recebido no login é utilizado nas
-requisições autenticadas, sem expor o endereço interno do backend diretamente
-nos componentes.
+A autenticação usa um cookie httpOnly `jwt` (SameSite=Strict, Domain=.bnfix.com.br)
+definido pelo backend no login. O cookie trafega automaticamente entre
+`bnfix.com.br` e `api.bnfix.com.br` (mesmo site) — nenhum token é armazenado
+em `localStorage` ou exposto ao JavaScript. A sessão é validada no reload via
+`GET /auth/me`.
 
 Os perfis retornados pela API são apresentados no frontend da seguinte forma:
 
@@ -106,7 +107,7 @@ Os perfis retornados pela API são apresentados no frontend da seguinte forma:
 
 ```text
 src/
-├── app/          # rotas, layout e proxy da API
+├── app/          # rotas e layout (App Router)
 ├── components/   # componentes compartilhados
 ├── contexts/     # autenticação e tema
 ├── screens/      # páginas e dashboards por perfil
@@ -116,7 +117,7 @@ src/
 
 ## Deploy na Vercel
 
-Configure `BNFIX_API_BASE_URL` e `NEXT_PUBLIC_SITE_URL` nas variáveis de ambiente
+Configure `NEXT_PUBLIC_API_URL` e `NEXT_PUBLIC_SITE_URL` nas variáveis de ambiente
 do projeto na Vercel. Em seguida, publique a branch principal normalmente.
 
 O build utilizado no deploy é:

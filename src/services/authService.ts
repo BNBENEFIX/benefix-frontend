@@ -1,15 +1,15 @@
 /**
- * Serviço de autenticação — endpoint /auth/login da API BNFix.
+ * Serviço de autenticação — endpoints /auth/* da API BNFix.
  *
- * O backend retorna um JWT. Decodificamos o payload para extrair
- * role, nome e id sem precisar de chamadas extras de /me.
+ * A sessão vive no cookie httpOnly `jwt` (gerenciado pelo browser/backend).
+ * Nenhum token é lido ou armazenado pelo frontend. O perfil do usuário vem
+ * no body do login/switch e via GET /auth/me (valida a sessão no reload).
  */
-import bnfixApi, { setToken, clearToken, USER_KEY } from './bnfixApi';
+import bnfixApi, { USER_KEY, LAST_ACTIVITY_KEY } from './bnfixApi';
 import type {
+  AuthMeResponse,
   LoginRequest,
-  LoginResponse,
   SwitchCompanyRequest,
-  SwitchCompanyResponse,
   BackendRole,
   User,
   UserRole,
@@ -26,141 +26,71 @@ const backendRoleToUIRole = (role: BackendRole): UserRole => {
   }
 };
 
-// ── Decode seguro do payload JWT (sem verificação de assinatura) ─────────────
+// ── Mapeia AuthMeResponse (backend) → User (frontend) ────────────────────────
 
-const decodeJwtPayload = (token: string): Record<string, any> | null => {
-  try {
-    const parts = token.split('.');
-    if (parts.length !== 3) return null;
-    const payload = parts[1].replace(/-/g, '+').replace(/_/g, '/');
-    const json = atob(payload);
-    return JSON.parse(json);
-  } catch {
-    return null;
-  }
-};
-
-// ── Constrói User a partir do token JWT decodificado ─────────────────────────
-
-export const buildUserFromToken = (token: string, emailFallback?: string): User | null => {
-  const payload = decodeJwtPayload(token);
-  if (!payload) return null;
-
-  const nowInSeconds = Math.floor(Date.now() / 1000);
-  if (typeof payload.exp === 'number' && payload.exp <= nowInSeconds) {
-    return null;
-  }
-
-  // Campos comuns em JWT Quarkus/Spring: sub, upn, groups[], roles[]
-  const backendRole: BackendRole =
-    payload.role ??
-    payload['cognito:groups']?.[0] ??
-    (Array.isArray(payload.groups) ? payload.groups[0] : null) ??
-    (Array.isArray(payload.roles) ? payload.roles[0] : null) ??
-    'USER';
-
-  const uiRole = backendRoleToUIRole(backendRole as BackendRole);
-  const stableId =
-    payload.accountId ??
-    payload.id ??
-    payload.userId ??
-    payload.sub ??
-    emailFallback ??
-    '';
-
+export const mapAuthMeToUser = (me: AuthMeResponse): User => {
+  const uiRole = backendRoleToUIRole(me.role);
   return {
-    id:          String(stableId),
-    name:        payload.name ?? payload.preferred_username ?? emailFallback?.split('@')[0] ?? 'Usuário',
-    email:       payload.email ?? payload.upn ?? emailFallback ?? '',
+    id:          me.accountId ?? me.email,
+    name:        me.name ?? me.email.split('@')[0],
+    email:       me.email,
     role:        uiRole,
-    backendRole: backendRole as BackendRole,
-    companyId:   payload.companyId ? String(payload.companyId) : undefined,
-    companyName: payload.companyName ?? undefined,
+    backendRole: me.role,
+    companyId:   me.companyId != null ? String(me.companyId) : undefined,
+    companyName: me.companyName ?? undefined,
     score:       uiRole === 'EMPLOYEE' ? 0 : undefined,
     level:       uiRole === 'EMPLOYEE' ? 'Bronze' : undefined,
   };
 };
 
-// ── Login real ───────────────────────────────────────────────────────────────
+// ── Login ─────────────────────────────────────────────────────────────────────
 
-export const login = async (
-  email: string,
-  password: string,
-): Promise<{ user: User; token: string }> => {
+export const login = async (email: string, password: string): Promise<{ user: User }> => {
   const payload: LoginRequest = { email, password };
-  const response = await bnfixApi.post<LoginResponse>('/auth/login', payload);
+  const { data } = await bnfixApi.post<AuthMeResponse>('/auth/login', payload);
 
-  const { data } = response;
-
-  let token: string =
-    typeof data === 'string'
-      ? data
-      : data.token ?? data.accessToken ?? data.access_token ?? '';
-
-  // Fallback útil apenas em ambientes server-side; browsers não expõem Set-Cookie.
-  if (!token) {
-    const setCookieHeader = (response.headers['set-cookie'] as string | string[] | undefined);
-    const cookieStr = Array.isArray(setCookieHeader)
-      ? setCookieHeader.join('; ')
-      : (setCookieHeader ?? '');
-    const match = cookieStr.match(/(?:^|;\s*)jwt=([^;]+)/i);
-    if (match) {
-      token = match[1];
-    }
-  }
-
-  if (!token) {
-    throw new Error('Token não retornado pelo servidor. Verifique as credenciais.');
-  }
-
-  setToken(token);
-
-  const user: User = buildUserFromToken(token, email) ?? {
-    id:    email,
-    name:  email.split('@')[0],
-    email,
-    role:  'EMPLOYEE',
-    score: 0,
-    level: 'Bronze',
-  };
-
+  const user = mapAuthMeToUser(data);
   localStorage.setItem(USER_KEY, JSON.stringify(user));
-  return { user, token };
+  localStorage.setItem(LAST_ACTIVITY_KEY, String(Date.now()));
+  return { user };
 };
 
-// ── Troca do tenant ativo ────────────────────────────────────────────────────
+// ── Troca do tenant ativo ─────────────────────────────────────────────────────
 
-export const switchCompany = async (companyId: number): Promise<string> => {
+export const switchCompany = async (companyId: number): Promise<User> => {
   const payload: SwitchCompanyRequest = { companyId };
-  const { data } = await bnfixApi.post<SwitchCompanyResponse>('/auth/switch-company', payload);
+  const { data } = await bnfixApi.post<AuthMeResponse>('/auth/switch-company', payload);
 
-  const token = data.token ?? data.accessToken ?? data.access_token ?? '';
-  if (!token) {
-    throw new Error('Token não retornado ao trocar de empresa.');
-  }
-
-  return token;
+  const user = mapAuthMeToUser(data);
+  localStorage.setItem(USER_KEY, JSON.stringify(user));
+  localStorage.setItem(LAST_ACTIVITY_KEY, String(Date.now()));
+  return user;
 };
 
-// ── Busca dados do manager logado ─────────────────────────────────────────────
+// ── Valida a sessão no reload (cookie httpOnly não é legível por JS) ──────────
 
-export const fetchManagerProfile = async (): Promise<Partial<User>> => {
+export const fetchMe = async (): Promise<User | null> => {
   try {
-    const { data } = await bnfixApi.get('/managers/me');
-    return {
-      id:          String(data.id),
-      name:        data.name,
-      email:       data.email,
-      companyId:   data.companyId ? String(data.companyId) : undefined,
-      companyName: data.companyName ?? undefined,
-    };
+    const { data } = await bnfixApi.get<AuthMeResponse>('/auth/me');
+    const user = mapAuthMeToUser(data);
+    localStorage.setItem(USER_KEY, JSON.stringify(user));
+    localStorage.setItem(LAST_ACTIVITY_KEY, String(Date.now()));
+    return user;
   } catch {
-    return {};
+    localStorage.removeItem(USER_KEY);
+    localStorage.removeItem(LAST_ACTIVITY_KEY);
+    return null;
   }
 };
 
-// ── Logout ───────────────────────────────────────────────────────────────────
+// ── Logout — revoga o token no backend e expira o cookie ──────────────────────
 
-export const logout = () => {
-  clearToken();
+export const logout = async (): Promise<void> => {
+  try {
+    await bnfixApi.post('/auth/logout');
+  } catch {
+    // Mesmo falando a chamada (ex.: cookie já expirado), limpamos localmente.
+  }
+  localStorage.removeItem(USER_KEY);
+  localStorage.removeItem(LAST_ACTIVITY_KEY);
 };

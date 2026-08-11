@@ -15,24 +15,21 @@ export interface LoginRequest {
   password: string;
 }
 
-export interface LoginResponse {
-  token: string;
-  accessToken?: string;
-  access_token?: string;
-  /** Campo retornado pelo backend — pode variar; tratar com fallback */
-  role?: BackendRole;
-  /** Algumas implementações retornam o objeto do usuário junto */
-  user?: BackendUser;
+/**
+ * Perfil devolvido por /auth/login, /auth/switch-company e /auth/me.
+ * O token em si vive apenas no cookie httpOnly — nunca exposto ao JS.
+ */
+export interface AuthMeResponse {
+  accountId?: string;
+  email: string;
+  role: BackendRole;
+  companyId?: number;
+  companyName?: string;
+  name?: string;
 }
 
 export interface SwitchCompanyRequest {
   companyId: number;
-}
-
-export interface SwitchCompanyResponse {
-  token: string;
-  accessToken?: string;
-  access_token?: string;
 }
 
 // ── Entidades do backend ─────────────────────────────────────────────────────
