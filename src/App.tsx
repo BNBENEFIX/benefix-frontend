@@ -11,14 +11,14 @@ import { SharedBenefitsHub } from './screens/SharedBenefitsHub';
 import { BenefitsCatalog } from './screens/BenefitsCatalog';
 import { CompanyProfile } from './screens/CompanyProfile';
 import { ProviderBenefitsConsole } from './components/ProviderBenefitsConsole';
-import { Building2, LayoutDashboard, ShoppingBag, Loader2 } from 'lucide-react';
+import { Building2, LayoutDashboard, ShoppingBag, Loader2, Users } from 'lucide-react';
 
 // ── Conteúdo principal (autenticado) ─────────────────────────────────────────
 
 const AuthenticatedApp: React.FC = () => {
   const { user } = useAuth();
   const isEmployee = user?.role === 'EMPLOYEE';
-  const [activeTab, setActiveTab] = useState<'catalog' | 'dashboard' | 'company'>(
+  const [activeTab, setActiveTab] = useState<'catalog' | 'dashboard' | 'company' | 'employees'>(
     isEmployee ? 'catalog' : 'dashboard',
   );
 
@@ -27,7 +27,7 @@ const AuthenticatedApp: React.FC = () => {
     switch (user.role) {
       case 'ADMIN':    return <DashboardAdmin />;
       case 'SUPPLIER': return <DashboardSupplier />;
-      case 'COMPANY':  return <><ProviderBenefitsConsole /><DashboardRH /></>;
+      case 'COMPANY':  return <ProviderBenefitsConsole />;
       case 'EMPLOYEE': return <SharedBenefitsHub />;
       default:         return null;
     }
@@ -54,6 +54,15 @@ const AuthenticatedApp: React.FC = () => {
               <LayoutDashboard className="h-4 w-4" />
               <span>Painel</span>
             </button>
+            {user?.role === 'COMPANY' && (
+              <button
+                onClick={() => setActiveTab('employees')}
+                className={`flex h-10 items-center gap-2 rounded-lg px-4 transition-colors ${tabClass('employees')}`}
+              >
+                <Users className="h-4 w-4" />
+                <span>Colaboradores</span>
+              </button>
+            )}
             <button
               onClick={() => setActiveTab('catalog')}
               className={`flex h-10 items-center gap-2 rounded-lg px-4 transition-colors ${tabClass('catalog')}`}
@@ -84,6 +93,8 @@ const AuthenticatedApp: React.FC = () => {
             ? <BenefitsCatalog />
             : activeTab === 'company' && user?.role === 'COMPANY'
               ? <CompanyProfile />
+              : activeTab === 'employees' && user?.role === 'COMPANY'
+                ? <DashboardRH />
             : renderDashboard()}
       </main>
     </div>

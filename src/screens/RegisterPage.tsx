@@ -14,8 +14,11 @@ import {
   CreditCard,
   ChevronLeft,
   ChevronRight,
+  Moon,
+  Sun,
 } from 'lucide-react';
 import { onboardingService } from '../services/onboardingService';
+import { useTheme } from '../contexts/ThemeContext';
 
 interface RegisterPageProps {
   onBackToLogin: () => void;
@@ -166,6 +169,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
   onBackToLogin,
   onRegisterSuccess,
 }) => {
+  const { theme, toggleTheme } = useTheme();
   const [step, setStep] = useState<1 | 2>(1);
 
   // Campos de texto simples
@@ -271,6 +275,14 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
   if (success) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 p-4">
+        <button
+          type="button"
+          onClick={toggleTheme}
+          className="fixed top-4 right-4 z-50 rounded-lg p-2.5 text-slate-500 hover:bg-slate-200/60 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-700/60 dark:hover:text-slate-200 transition-colors"
+          aria-label="Alternar tema"
+        >
+          {theme === 'light' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
+        </button>
         <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden p-10 text-center">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-emerald-100 dark:bg-emerald-900/30 rounded-2xl mb-5">
             <CheckCircle2 className="w-9 h-9 text-emerald-500" />
@@ -293,6 +305,14 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 p-4">
+      <button
+        type="button"
+        onClick={toggleTheme}
+        className="fixed top-4 right-4 z-50 rounded-lg p-2.5 text-slate-500 hover:bg-slate-200/60 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-700/60 dark:hover:text-slate-200 transition-colors"
+        aria-label="Alternar tema"
+      >
+        {theme === 'light' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
+      </button>
       <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
 
         {/* Header */}

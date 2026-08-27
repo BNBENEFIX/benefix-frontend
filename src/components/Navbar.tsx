@@ -327,7 +327,7 @@ export const Navbar: React.FC = () => {
 
             <button
               onClick={toggleTheme}
-              className="hidden rounded-lg p-2 text-[var(--muted)] hover:bg-[var(--surface-muted)] hover:text-[var(--ink)] sm:block"
+              className="rounded-lg p-2 text-[var(--muted)] hover:bg-[var(--surface-muted)] hover:text-[var(--ink)]"
               aria-label="Alternar tema"
             >
               {theme === 'light'

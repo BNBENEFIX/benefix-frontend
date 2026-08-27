@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { LogIn, Eye, EyeOff, AlertCircle, Loader2, Check, ShieldCheck } from 'lucide-react';
+import { useTheme } from '../contexts/ThemeContext';
+import { LogIn, Eye, EyeOff, AlertCircle, Loader2, Check, ShieldCheck, Moon, Sun } from 'lucide-react';
 
 interface LoginPageProps {
   onLoginSuccess: () => void;
@@ -9,6 +10,7 @@ interface LoginPageProps {
 
 export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess, onNavigateToRegister }) => {
   const { login } = useAuth();
+  const { theme, toggleTheme } = useTheme();
 
   const [email,    setEmail]    = useState('');
   const [password, setPassword] = useState('');
@@ -47,6 +49,14 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess, onNavigate
 
   return (
     <main className="min-h-screen bg-[#f6f5f1] dark:bg-[#111713] lg:grid lg:grid-cols-[minmax(0,1.08fr)_minmax(420px,.92fr)]">
+      <button
+        type="button"
+        onClick={toggleTheme}
+        className="fixed top-4 right-4 z-50 rounded-lg p-2.5 text-slate-500 hover:bg-slate-200/60 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-700/60 dark:hover:text-slate-200 transition-colors"
+        aria-label="Alternar tema"
+      >
+        {theme === 'light' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
+      </button>
       <section className="relative hidden overflow-hidden bg-[#12372a] px-12 py-10 text-white lg:flex lg:flex-col lg:justify-between xl:px-20 xl:py-14">
         <div className="absolute -bottom-24 -right-20 h-80 w-80 rounded-full border border-white/10" />
         <div className="absolute -bottom-8 -right-2 h-52 w-52 rounded-full border border-white/10" />
