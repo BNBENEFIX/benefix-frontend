@@ -195,15 +195,18 @@ export const Navbar: React.FC = () => {
 
   return (
     <>
-      <nav className="sticky top-0 z-50 border-b border-[var(--line)] bg-[var(--surface)] px-3 pb-2.5 pt-[max(0.625rem,env(safe-area-inset-top))] transition-colors sm:px-6 sm:pb-3 sm:pt-[max(0.75rem,env(safe-area-inset-top))]">
+      <nav className="sticky top-0 z-50 border-b border-[var(--line)] glass-effect px-3 pb-2.5 pt-[max(0.625rem,env(safe-area-inset-top))] sm:px-6 sm:pb-3 sm:pt-[max(0.75rem,env(safe-area-inset-top))]">
         <div className="mx-auto flex max-w-[1180px] items-center justify-between gap-2 sm:gap-3">
           <div className="flex min-w-0 items-center gap-2 sm:gap-3">
             <div className="flex shrink-0 items-center gap-2 sm:gap-2.5">
-              <img
-                src="/favicon.png"
-                alt="BNFix"
-                className="h-9 w-9 rounded-lg object-contain sm:h-10 sm:w-10"
-              />
+              <div className="relative">
+                <img
+                  src="/favicon.png"
+                  alt="BNFix"
+                  className="h-9 w-9 rounded-lg object-contain sm:h-10 sm:w-10"
+                />
+                <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-[var(--surface)] bg-[var(--brand)]" aria-hidden="true" />
+              </div>
               <div className="hidden sm:block">
                 <span className="block text-base font-semibold leading-none text-[var(--ink)]">BNFix</span>
                 <span className="mt-1 block text-[11px] text-[var(--muted)]">
@@ -327,17 +330,17 @@ export const Navbar: React.FC = () => {
 
             <button
               onClick={toggleTheme}
-              className="rounded-lg p-2 text-[var(--muted)] hover:bg-[var(--surface-muted)] hover:text-[var(--ink)]"
+              className="group rounded-lg p-2 text-[var(--muted)] hover:bg-[var(--surface-muted)] hover:text-[var(--accent)]"
               aria-label="Alternar tema"
             >
               {theme === 'light'
-                ? <Moon className="h-5 w-5" />
-                : <Sun className="h-5 w-5" />}
+                ? <Moon className="h-5 w-5 transition-transform duration-300 group-hover:rotate-[-20deg]" />
+                : <Sun className="h-5 w-5 transition-transform duration-300 group-hover:rotate-45" />}
             </button>
 
             {user && (
               <div className="flex items-center gap-1.5 border-l border-[var(--line)] pl-1.5 sm:gap-2 sm:pl-3">
-                <span className="hidden h-9 w-9 items-center justify-center rounded-full bg-[var(--brand-soft)] text-sm font-semibold text-[var(--brand-strong)] sm:flex">
+                <span className="hidden h-9 w-9 items-center justify-center rounded-full text-sm font-semibold text-[var(--action-ink)] sm:flex" style={{ background: 'var(--gradient-brand)' }}>
                   {user.name?.charAt(0).toUpperCase()}
                 </span>
                 <div className="hidden text-left lg:block">
@@ -350,10 +353,10 @@ export const Navbar: React.FC = () => {
                 </div>
                 <button
                   onClick={logout}
-                  className="ml-0 flex h-9 items-center gap-2 rounded-lg px-2 text-[var(--muted)] hover:bg-[#fff1ef] hover:text-[#a33f35] dark:hover:bg-red-950/40 dark:hover:text-red-300 sm:ml-1"
+                  className="group/logout ml-0 flex h-9 items-center gap-2 rounded-lg px-2 text-[var(--muted)] hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/40 dark:hover:text-red-300 sm:ml-1"
                   aria-label="Encerrar sessão"
                 >
-                  <LogOut className="h-4 w-4" />
+                  <LogOut className="h-4 w-4 transition-transform duration-200 group-hover/logout:-translate-x-0.5" />
                   <span className="hidden text-sm font-medium md:inline">Sair</span>
                 </button>
               </div>

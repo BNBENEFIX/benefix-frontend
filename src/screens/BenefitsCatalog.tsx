@@ -396,7 +396,7 @@ export const BenefitsCatalog: React.FC = () => {
             <button
               type="button"
               onClick={openCreate}
-              className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[var(--action)] px-5 text-sm font-semibold text-[var(--action-ink)] shadow-[0_10px_26px_rgba(18,55,42,.18)] hover:bg-[var(--action-hover)] sm:h-12 sm:w-auto"
+              className="btn-gradient flex h-11 w-full items-center justify-center gap-2 rounded-xl px-5 text-sm font-semibold shadow-[0_10px_26px_var(--glow)] sm:h-12 sm:w-auto"
             >
               <Plus className="h-5 w-5" />
               Cadastrar benefício
@@ -411,10 +411,10 @@ export const BenefitsCatalog: React.FC = () => {
             <button
               type="button"
               onClick={() => changeView('mine')}
-              className={`flex min-h-20 items-center justify-between rounded-xl border p-4 text-left ${
+              className={`flex min-h-20 items-center justify-between rounded-xl border p-4 text-left transition-all duration-200 ${
                 activeView === 'mine'
-                  ? 'border-[var(--brand)] bg-[var(--brand-soft)] text-[var(--brand-strong)]'
-                  : 'border-[var(--line)] bg-[var(--surface)] text-[var(--muted)] hover:border-[var(--brand)]'
+                  ? 'border-[var(--brand)] bg-[var(--brand-soft)] text-[var(--brand-strong)] shadow-[0_4px_20px_var(--glow)]'
+                  : 'border-[var(--line)] bg-[var(--surface)] text-[var(--muted)] hover:border-[var(--brand)] hover:shadow-sm'
               }`}
             >
               <span className="flex items-center gap-3">
@@ -429,10 +429,10 @@ export const BenefitsCatalog: React.FC = () => {
             <button
               type="button"
               onClick={() => changeView('discover')}
-              className={`flex min-h-20 items-center justify-between rounded-xl border p-4 text-left ${
+              className={`flex min-h-20 items-center justify-between rounded-xl border p-4 text-left transition-all duration-200 ${
                 activeView === 'discover'
-                  ? 'border-[var(--brand)] bg-[var(--brand-soft)] text-[var(--brand-strong)]'
-                  : 'border-[var(--line)] bg-[var(--surface)] text-[var(--muted)] hover:border-[var(--brand)]'
+                  ? 'border-[var(--brand)] bg-[var(--brand-soft)] text-[var(--brand-strong)] shadow-[0_4px_20px_var(--glow)]'
+                  : 'border-[var(--line)] bg-[var(--surface)] text-[var(--muted)] hover:border-[var(--brand)] hover:shadow-sm'
               }`}
             >
               <span className="flex items-center gap-3">
@@ -554,10 +554,10 @@ export const BenefitsCatalog: React.FC = () => {
                 return (
                   <article
                     key={benefit.id}
-                    className="flex flex-col rounded-2xl border border-[var(--line)] bg-[var(--surface)] p-4 shadow-[0_8px_30px_rgba(23,63,50,.045)] dark:shadow-[0_16px_38px_rgba(0,0,0,.16)] sm:p-5"
+                    className="card-glow flex flex-col rounded-2xl border border-[var(--line)] bg-[var(--surface)] p-4 sm:p-5"
                   >
                     <div className="flex items-start justify-between gap-3">
-                      <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--brand-soft)] text-[var(--brand)]">
+                      <span className="flex h-10 w-10 items-center justify-center rounded-xl text-[var(--action-ink)]" style={{ background: 'var(--gradient-brand)' }}>
                         <Tag className="h-5 w-5" />
                       </span>
                       <span className={`rounded-full px-3 py-1 text-xs font-semibold ${
@@ -565,7 +565,7 @@ export const BenefitsCatalog: React.FC = () => {
                           ? benefit.active === false
                             ? 'bg-[var(--surface-muted)] text-[var(--muted)]'
                             : 'bg-[var(--brand-soft)] text-[var(--brand)]'
-                          : 'bg-[var(--surface-muted)] text-[var(--muted)]'
+                          : 'bg-[var(--accent-soft)] text-[var(--accent)]'
                       }`}>
                         {isOwnCard
                           ? benefit.active === false ? 'Pausado' : 'Disponível'

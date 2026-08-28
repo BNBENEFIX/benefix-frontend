@@ -11,7 +11,7 @@ import { SharedBenefitsHub } from './screens/SharedBenefitsHub';
 import { BenefitsCatalog } from './screens/BenefitsCatalog';
 import { CompanyProfile } from './screens/CompanyProfile';
 import { ProviderBenefitsConsole } from './components/ProviderBenefitsConsole';
-import { Building2, LayoutDashboard, ShoppingBag, Loader2, Users } from 'lucide-react';
+import { Building2, LayoutDashboard, ShoppingBag, Users } from 'lucide-react';
 
 // ── Conteúdo principal (autenticado) ─────────────────────────────────────────
 
@@ -35,7 +35,7 @@ const AuthenticatedApp: React.FC = () => {
 
   const tabClass = (tab: typeof activeTab) =>
     activeTab === tab
-      ? 'bg-[var(--action)] text-[var(--action-ink)]'
+      ? 'bg-[var(--action)] text-[var(--action-ink)] shadow-[0_2px_12px_var(--glow)]'
       : 'text-[var(--muted)] hover:bg-[var(--surface-muted)] hover:text-[var(--ink)]';
 
   return (
@@ -52,9 +52,9 @@ const AuthenticatedApp: React.FC = () => {
                 role="tab"
                 aria-selected={activeTab === 'dashboard'}
                 onClick={() => setActiveTab('dashboard')}
-                className={`flex h-10 shrink-0 items-center gap-2 rounded-lg px-3 transition-colors sm:px-4 ${tabClass('dashboard')}`}
+                className={`flex h-10 shrink-0 items-center gap-2 rounded-lg px-3 transition-all duration-200 sm:px-4 ${tabClass('dashboard')}`}
               >
-                <LayoutDashboard className="h-4 w-4" />
+                <LayoutDashboard className={`h-4 w-4 transition-transform duration-200 ${activeTab === 'dashboard' ? 'scale-110' : ''}`} />
                 <span className="whitespace-nowrap">Painel</span>
               </button>
               {user?.role === 'COMPANY' && (
@@ -62,9 +62,9 @@ const AuthenticatedApp: React.FC = () => {
                   role="tab"
                   aria-selected={activeTab === 'employees'}
                   onClick={() => setActiveTab('employees')}
-                  className={`flex h-10 shrink-0 items-center gap-2 rounded-lg px-3 transition-colors sm:px-4 ${tabClass('employees')}`}
+                  className={`flex h-10 shrink-0 items-center gap-2 rounded-lg px-3 transition-all duration-200 sm:px-4 ${tabClass('employees')}`}
                 >
-                  <Users className="h-4 w-4" />
+                  <Users className={`h-4 w-4 transition-transform duration-200 ${activeTab === 'employees' ? 'scale-110' : ''}`} />
                   <span className="whitespace-nowrap">Colaboradores</span>
                 </button>
               )}
@@ -72,9 +72,9 @@ const AuthenticatedApp: React.FC = () => {
                 role="tab"
                 aria-selected={activeTab === 'catalog'}
                 onClick={() => setActiveTab('catalog')}
-                className={`flex h-10 shrink-0 items-center gap-2 rounded-lg px-3 transition-colors sm:px-4 ${tabClass('catalog')}`}
+                className={`flex h-10 shrink-0 items-center gap-2 rounded-lg px-3 transition-all duration-200 sm:px-4 ${tabClass('catalog')}`}
               >
-                <ShoppingBag className="h-4 w-4" />
+                <ShoppingBag className={`h-4 w-4 transition-transform duration-200 ${activeTab === 'catalog' ? 'scale-110' : ''}`} />
                 <span className="whitespace-nowrap">{user?.role === 'COMPANY' ? 'Benefícios' : 'Catálogo'}</span>
               </button>
               {user?.role === 'COMPANY' && (
@@ -82,9 +82,9 @@ const AuthenticatedApp: React.FC = () => {
                   role="tab"
                   aria-selected={activeTab === 'company'}
                   onClick={() => setActiveTab('company')}
-                  className={`flex h-10 shrink-0 items-center gap-2 rounded-lg px-3 transition-colors sm:px-4 ${tabClass('company')}`}
+                  className={`flex h-10 shrink-0 items-center gap-2 rounded-lg px-3 transition-all duration-200 sm:px-4 ${tabClass('company')}`}
                 >
-                  <Building2 className="h-4 w-4" />
+                  <Building2 className={`h-4 w-4 transition-transform duration-200 ${activeTab === 'company' ? 'scale-110' : ''}`} />
                   <span className="whitespace-nowrap">Empresa</span>
                 </button>
               )}
@@ -94,8 +94,8 @@ const AuthenticatedApp: React.FC = () => {
       )}
 
       <main
-        key={`${user?.role ?? 'anonymous'}:${user?.companyId ?? 'no-company'}`}
-        className="flex-1 bg-[var(--canvas)] transition-colors"
+        key={`${user?.role ?? 'anonymous'}:${user?.companyId ?? 'no-company'}:${activeTab}`}
+        className="flex-1 bg-[var(--canvas)] transition-colors fade-in"
       >
         {isEmployee
           ? <SharedBenefitsHub />
@@ -122,10 +122,13 @@ const AppContent: React.FC<{ initialAuthScreen?: AuthScreen }> = ({ initialAuthS
   // Spinner global enquanto carrega sessão
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-950">
-        <div className="flex flex-col items-center gap-3 text-white">
-          <Loader2 className="w-8 h-8 animate-spin text-emerald-400" />
-          <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
+      <div className="min-h-screen flex items-center justify-center bg-[var(--canvas)]">
+        <div className="flex flex-col items-center gap-4">
+          <div className="relative">
+            <div className="h-12 w-12 rounded-full border-[3px] border-[var(--line)]" />
+            <div className="absolute inset-0 h-12 w-12 rounded-full border-[3px] border-transparent border-t-[var(--brand)] animate-spin" />
+          </div>
+          <span className="text-xs font-bold uppercase tracking-wider text-[var(--muted)]">
             Carregando sessão...
           </span>
         </div>

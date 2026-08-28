@@ -126,34 +126,37 @@ export function SharedBenefitsHub() {
     return (
       <div
         role="status"
-        className="flex min-h-[560px] flex-col items-center justify-center bg-[#f5f6f2] px-6 text-center"
+        className="flex min-h-[560px] flex-col items-center justify-center bg-[var(--canvas)] px-6 text-center"
       >
-        <Loader2 className="h-9 w-9 animate-spin text-[#2f7658]" />
-        <h1 className="mt-5 text-xl font-semibold text-[#18211d]">Abrindo seus benefícios</h1>
-        <p className="mt-2 text-sm text-[#68746d]">Isso pode levar alguns segundos.</p>
+        <div className="relative">
+          <div className="h-12 w-12 rounded-full border-[3px] border-[var(--line)]" />
+          <div className="absolute inset-0 h-12 w-12 rounded-full border-[3px] border-transparent border-t-[var(--brand)] animate-spin" />
+        </div>
+        <h1 className="mt-5 text-xl font-semibold text-[var(--ink)]">Abrindo seus benefícios</h1>
+        <p className="mt-2 text-sm text-[var(--muted)]">Isso pode levar alguns segundos.</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#f5f6f2] px-3 py-5 text-[#18211d] sm:px-6 sm:py-9">
+    <div className="benefits-workspace min-h-screen px-3 py-5 text-[var(--ink)] sm:px-6 sm:py-9">
       <div className="mx-auto max-w-[1180px]">
-        <header className="flex flex-col gap-4 border-b border-[#d8dfda] pb-6 sm:flex-row sm:items-end sm:justify-between sm:gap-5 sm:pb-7">
+        <header className="flex flex-col gap-4 border-b border-[var(--line)] pb-6 sm:flex-row sm:items-end sm:justify-between sm:gap-5 sm:pb-7">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[.14em] text-[#2f7658]">
+            <p className="text-xs font-semibold uppercase tracking-[.14em] text-[var(--brand)]">
               Seus benefícios
             </p>
             <h1 className="mt-2 font-display text-2xl tracking-[-.03em] sm:mt-3 sm:text-3xl md:text-4xl">
               Olá, {user?.name?.split(' ')[0]}.
             </h1>
-            <p className="mt-1.5 max-w-xl text-sm leading-6 text-[#68746d] sm:mt-2">
+            <p className="mt-1.5 max-w-xl text-sm leading-6 text-[var(--muted)] sm:mt-2">
               Escolha um benefício e mostre o QR Code no local de atendimento.
             </p>
           </div>
           <button
             type="button"
             onClick={() => load()}
-            className="inline-flex h-10 items-center justify-center gap-2 self-start rounded-lg border border-[#cfd8d2] bg-white px-3 text-sm font-semibold text-[#536159] hover:bg-[#f0f3ef] sm:h-11 sm:px-4"
+            className="inline-flex h-10 items-center justify-center gap-2 self-start rounded-lg border border-[var(--line)] bg-[var(--surface)] px-3 text-sm font-semibold text-[var(--muted)] hover:bg-[var(--surface-muted)] hover:text-[var(--ink)] sm:h-11 sm:px-4"
           >
             <RefreshCw className="h-4 w-4" />
             Atualizar
@@ -179,20 +182,20 @@ export function SharedBenefitsHub() {
           <div className="mb-5 flex items-end justify-between gap-4">
             <div>
               <h2 className="text-2xl font-semibold tracking-[-.02em]">Disponíveis para você</h2>
-              <p className="mt-1 text-sm text-[#68746d]">Toque no botão para abrir o QR Code.</p>
+              <p className="mt-1 text-sm text-[var(--muted)]">Toque no botão para abrir o QR Code.</p>
             </div>
-            <span className="shrink-0 text-xs font-medium text-[#76827b]">
+            <span className="shrink-0 text-xs font-medium text-[var(--muted)]">
               {benefits.length} {benefits.length === 1 ? 'benefício' : 'benefícios'}
             </span>
           </div>
 
           {benefits.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-[#c8d1cb] bg-white/60 p-8 sm:p-10">
-              <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#e7efe9] text-[#2f7658]">
+            <div className="rounded-2xl border border-dashed border-[var(--line)] bg-[var(--surface)]/60 p-8 sm:p-10">
+              <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[var(--brand-soft)] text-[var(--brand)]">
                 <TicketCheck className="h-5 w-5" />
               </span>
               <h3 className="mt-5 text-lg font-semibold">Nenhum benefício liberado ainda</h3>
-              <p className="mt-2 max-w-lg text-sm leading-6 text-[#68746d]">
+              <p className="mt-2 max-w-lg text-sm leading-6 text-[var(--muted)]">
                 Os benefícios aparecem aqui automaticamente quando a sua empresa tem uma
                 parceria ativa com o estabelecimento.
               </p>
@@ -204,16 +207,16 @@ export function SharedBenefitsHub() {
                 return (
                   <article
                     key={benefit.benefitId}
-                    className="flex flex-col rounded-2xl border border-[#d5ddd8] bg-white p-4 shadow-[0_8px_30px_rgba(23,63,50,.05)] sm:p-5"
+                    className="card-glow flex flex-col rounded-2xl border border-[var(--line)] bg-[var(--surface)] p-4 sm:p-5"
                   >
                     <div className="flex items-start justify-between gap-4">
-                      <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#e7efe9] text-[#2f7658]">
+                      <span className="flex h-11 w-11 items-center justify-center rounded-xl text-white" style={{ background: 'var(--gradient-brand)' }}>
                         <TicketCheck className="h-5 w-5" />
                       </span>
                       <span className={`rounded-full px-3 py-1 text-xs font-semibold ${
                         noUsesLeft
-                          ? 'bg-[#f2f3f0] text-[#68746d]'
-                          : 'bg-[#edf8f1] text-[#2f7658]'
+                          ? 'bg-[var(--surface-muted)] text-[var(--muted)]'
+                          : 'bg-[var(--brand-soft)] text-[var(--brand)]'
                       }`}>
                         {noUsesLeft
                           ? 'Limite atingido'
@@ -221,12 +224,12 @@ export function SharedBenefitsHub() {
                       </span>
                     </div>
                     <h3 className="mt-5 text-lg font-semibold tracking-[-.015em]">{benefit.benefitName}</h3>
-                    <p className="mt-2 flex items-center gap-2 text-sm text-[#68746d]">
+                    <p className="mt-2 flex items-center gap-2 text-sm text-[var(--muted)]">
                       <Store className="h-4 w-4 shrink-0" />
                       {benefit.providerName}
                     </p>
                     {benefit.description && (
-                      <p className="mt-3 line-clamp-2 text-sm leading-6 text-[#68746d]">
+                      <p className="mt-3 line-clamp-2 text-sm leading-6 text-[var(--muted)]">
                         {benefit.description}
                       </p>
                     )}
@@ -235,7 +238,7 @@ export function SharedBenefitsHub() {
                         {benefit.categories.map((category) => (
                           <span
                             key={category.id}
-                            className="rounded-full border border-[#dce3de] px-2.5 py-0.5 text-xs text-[#536159]"
+                            className="rounded-full border border-[var(--line)] px-2.5 py-0.5 text-xs text-[var(--muted)]"
                           >
                             {category.name}
                           </span>
@@ -244,15 +247,15 @@ export function SharedBenefitsHub() {
                     )}
                     {benefit.terms && (
                       <details className="group mt-3">
-                        <summary className="flex cursor-pointer list-none items-center gap-1 text-xs font-semibold text-[#536159]">
+                        <summary className="flex cursor-pointer list-none items-center gap-1 text-xs font-semibold text-[var(--muted)]">
                           Termos de uso
                           <ChevronDown className="h-3.5 w-3.5 transition-transform group-open:rotate-180" />
                         </summary>
-                        <p className="mt-2 text-xs leading-5 text-[#68746d]">{benefit.terms}</p>
+                        <p className="mt-2 text-xs leading-5 text-[var(--muted)]">{benefit.terms}</p>
                       </details>
                     )}
-                    <div className="mt-5 border-t border-[#edf0ed] pt-4">
-                      <p className="mb-3 text-xs text-[#76827b]">
+                    <div className="mt-5 border-t border-[var(--line)] pt-4">
+                      <p className="mb-3 text-xs text-[var(--muted)]">
                         {benefit.validUntil
                           ? `Válido até ${formatDate(benefit.validUntil)}`
                           : 'Sem data de expiração'}
@@ -261,7 +264,7 @@ export function SharedBenefitsHub() {
                         type="button"
                         onClick={() => showQr(benefit)}
                         disabled={busyId === benefit.benefitId || noUsesLeft}
-                        className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#173f32] px-4 text-sm font-semibold text-white hover:bg-[#102e25] disabled:opacity-60"
+                        className="btn-gradient flex h-12 w-full items-center justify-center gap-2 rounded-xl px-4 text-sm font-semibold disabled:opacity-60"
                       >
                         {busyId === benefit.benefitId
                           ? <Loader2 className="h-5 w-5 animate-spin" />
