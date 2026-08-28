@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, type ReactNode } from 'react';
+import { useRef, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import {
   ArrowRight,
@@ -11,11 +11,13 @@ import {
   Clock3,
   HeartPulse,
   KeyRound,
+  Menu,
   QrCode,
   ShieldCheck,
   Sparkles,
   Store,
   Users,
+  X,
 } from 'lucide-react';
 import {
   motion,
@@ -283,6 +285,7 @@ function BenefitPass({ reduceMotion }: { reduceMotion: boolean }) {
 
 export function MarketingLanding() {
   const reduceMotion = Boolean(useReducedMotion());
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const heroRef = useRef<HTMLElement>(null);
   const { scrollYProgress } = useScroll();
   const smoothProgress = useSpring(scrollYProgress, {
@@ -338,18 +341,70 @@ export function MarketingLanding() {
           <div className="flex items-center gap-1.5 sm:gap-2">
             <Link
               href="/entrar"
-              className="rounded-lg px-3 py-2.5 text-sm font-semibold text-white hover:bg-white/10 sm:px-4"
+              className="hidden rounded-lg px-3 py-2.5 text-sm font-semibold text-white hover:bg-white/10 sm:inline-flex sm:px-4"
             >
               Entrar
             </Link>
             <Link
               href="/cadastro"
-              className="rounded-lg bg-[#F2C96D] px-3.5 py-2.5 text-sm font-semibold text-[#17352b] hover:bg-[#f7d985] sm:px-4"
+              className="rounded-lg bg-[#F2C96D] px-3 py-2 text-sm font-semibold text-[#17352b] hover:bg-[#f7d985] sm:px-4 sm:py-2.5"
             >
               Criar conta
             </Link>
+            <button
+              type="button"
+              onClick={() => setMobileMenuOpen(true)}
+              className="ml-1 flex h-10 w-10 items-center justify-center rounded-lg text-white hover:bg-white/10 lg:hidden"
+              aria-label="Abrir menu de navegação"
+            >
+              <Menu className="h-5 w-5" />
+            </button>
           </div>
         </motion.div>
+
+        {/* Mobile navigation overlay */}
+        {mobileMenuOpen && (
+          <div className="fixed inset-0 z-[80] lg:hidden">
+            <div
+              className="absolute inset-0 bg-[#0B3024]/90 backdrop-blur-md"
+              onClick={() => setMobileMenuOpen(false)}
+              aria-hidden="true"
+            />
+            <nav
+              className="relative mx-4 mt-4 rounded-2xl border border-white/10 bg-[#12372a] p-6 shadow-2xl sm:mx-8"
+              aria-label="Navegação mobile"
+            >
+              <div className="flex items-center justify-between mb-6">
+                <Link href="/" className="flex items-center gap-2.5" onClick={() => setMobileMenuOpen(false)}>
+                  <img src="/favicon.png" alt="" className="h-9 w-9 rounded-lg bg-white object-contain p-1" />
+                  <span className="text-base font-semibold text-white">BNFix</span>
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex h-10 w-10 items-center justify-center rounded-lg text-white/70 hover:bg-white/10 hover:text-white"
+                  aria-label="Fechar menu"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+              <div className="flex flex-col gap-1">
+                <a href="#produto" onClick={() => setMobileMenuOpen(false)} className="rounded-lg px-4 py-3 text-base font-medium text-white/80 hover:bg-white/10 hover:text-white">Produto</a>
+                <a href="#como-funciona" onClick={() => setMobileMenuOpen(false)} className="rounded-lg px-4 py-3 text-base font-medium text-white/80 hover:bg-white/10 hover:text-white">Como funciona</a>
+                <a href="#rotinas" onClick={() => setMobileMenuOpen(false)} className="rounded-lg px-4 py-3 text-base font-medium text-white/80 hover:bg-white/10 hover:text-white">Para sua rotina</a>
+                <a href="#seguranca" onClick={() => setMobileMenuOpen(false)} className="rounded-lg px-4 py-3 text-base font-medium text-white/80 hover:bg-white/10 hover:text-white">Segurança</a>
+              </div>
+              <div className="mt-5 flex flex-col gap-2 border-t border-white/10 pt-5">
+                <Link href="/entrar" onClick={() => setMobileMenuOpen(false)} className="flex h-11 items-center justify-center rounded-xl border border-white/20 text-sm font-semibold text-white hover:bg-white/10">
+                  Entrar
+                </Link>
+                <Link href="/cadastro" onClick={() => setMobileMenuOpen(false)} className="flex h-11 items-center justify-center rounded-xl bg-[#F2C96D] text-sm font-semibold text-[#17352b] hover:bg-[#f7d985]">
+                  Criar conta
+                </Link>
+              </div>
+            </nav>
+          </div>
+        )}
       </header>
 
       <section

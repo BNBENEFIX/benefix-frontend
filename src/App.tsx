@@ -45,40 +45,50 @@ const AuthenticatedApp: React.FC = () => {
       {/* O colaborador tem uma única jornada; esconder abas duplicadas reduz
           decisões antes da ação principal "Mostrar QR Code". */}
       {!isEmployee && (
-        <div className="border-b border-[var(--line)] bg-[var(--surface)] px-4 py-3 sm:px-6">
-          <div className="mx-auto flex max-w-[1180px] items-center gap-2 text-sm font-semibold">
-            <button
-              onClick={() => setActiveTab('dashboard')}
-              className={`flex h-10 items-center gap-2 rounded-lg px-4 transition-colors ${tabClass('dashboard')}`}
-            >
-              <LayoutDashboard className="h-4 w-4" />
-              <span>Painel</span>
-            </button>
-            {user?.role === 'COMPANY' && (
+        <div className="border-b border-[var(--line)] bg-[var(--surface)] px-3 py-2 sm:px-6 sm:py-3">
+          <div className="mx-auto max-w-[1180px] overflow-x-auto scrollbar-none">
+            <nav className="flex items-center gap-1 text-sm font-semibold sm:gap-2" role="tablist" aria-label="Navegação principal">
               <button
-                onClick={() => setActiveTab('employees')}
-                className={`flex h-10 items-center gap-2 rounded-lg px-4 transition-colors ${tabClass('employees')}`}
+                role="tab"
+                aria-selected={activeTab === 'dashboard'}
+                onClick={() => setActiveTab('dashboard')}
+                className={`flex h-10 shrink-0 items-center gap-2 rounded-lg px-3 transition-colors sm:px-4 ${tabClass('dashboard')}`}
               >
-                <Users className="h-4 w-4" />
-                <span>Colaboradores</span>
+                <LayoutDashboard className="h-4 w-4" />
+                <span className="whitespace-nowrap">Painel</span>
               </button>
-            )}
-            <button
-              onClick={() => setActiveTab('catalog')}
-              className={`flex h-10 items-center gap-2 rounded-lg px-4 transition-colors ${tabClass('catalog')}`}
-            >
-              <ShoppingBag className="h-4 w-4" />
-              <span>{user?.role === 'COMPANY' ? 'Benefícios' : 'Catálogo'}</span>
-            </button>
-            {user?.role === 'COMPANY' && (
+              {user?.role === 'COMPANY' && (
+                <button
+                  role="tab"
+                  aria-selected={activeTab === 'employees'}
+                  onClick={() => setActiveTab('employees')}
+                  className={`flex h-10 shrink-0 items-center gap-2 rounded-lg px-3 transition-colors sm:px-4 ${tabClass('employees')}`}
+                >
+                  <Users className="h-4 w-4" />
+                  <span className="whitespace-nowrap">Colaboradores</span>
+                </button>
+              )}
               <button
-                onClick={() => setActiveTab('company')}
-                className={`flex h-10 items-center gap-2 rounded-lg px-4 transition-colors ${tabClass('company')}`}
+                role="tab"
+                aria-selected={activeTab === 'catalog'}
+                onClick={() => setActiveTab('catalog')}
+                className={`flex h-10 shrink-0 items-center gap-2 rounded-lg px-3 transition-colors sm:px-4 ${tabClass('catalog')}`}
               >
-                <Building2 className="h-4 w-4" />
-                <span>Empresa</span>
+                <ShoppingBag className="h-4 w-4" />
+                <span className="whitespace-nowrap">{user?.role === 'COMPANY' ? 'Benefícios' : 'Catálogo'}</span>
               </button>
-            )}
+              {user?.role === 'COMPANY' && (
+                <button
+                  role="tab"
+                  aria-selected={activeTab === 'company'}
+                  onClick={() => setActiveTab('company')}
+                  className={`flex h-10 shrink-0 items-center gap-2 rounded-lg px-3 transition-colors sm:px-4 ${tabClass('company')}`}
+                >
+                  <Building2 className="h-4 w-4" />
+                  <span className="whitespace-nowrap">Empresa</span>
+                </button>
+              )}
+            </nav>
           </div>
         </div>
       )}

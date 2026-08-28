@@ -376,17 +376,17 @@ export const BenefitsCatalog: React.FC = () => {
   }
 
   return (
-    <div className="benefits-workspace min-h-screen px-4 py-6 text-[var(--ink)] sm:px-6 sm:py-9">
+    <div className="benefits-workspace min-h-screen px-3 py-5 text-[var(--ink)] sm:px-6 sm:py-9">
       <div className="mx-auto max-w-[1180px]">
-        <header className="flex flex-col gap-5 border-b border-[var(--line)] pb-7 sm:flex-row sm:items-end sm:justify-between">
+        <header className="flex flex-col gap-4 border-b border-[var(--line)] pb-6 sm:flex-row sm:items-end sm:justify-between sm:gap-5 sm:pb-7">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[.14em] text-[var(--brand)]">
               Gestão de benefícios
             </p>
-            <h1 className="mt-3 font-display text-3xl tracking-[-.03em] sm:text-4xl">
+            <h1 className="mt-2 font-display text-2xl tracking-[-.03em] sm:mt-3 sm:text-3xl md:text-4xl">
               {isManager ? 'Benefícios da empresa' : 'Benefícios disponíveis'}
             </h1>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--muted)]">
+            <p className="mt-1.5 max-w-2xl text-sm leading-6 text-[var(--muted)] sm:mt-2">
               {isManager
                 ? 'Cadastre o que sua empresa oferece ou encontre opções de empresas parceiras.'
                 : 'Veja os benefícios disponíveis na plataforma.'}
@@ -396,7 +396,7 @@ export const BenefitsCatalog: React.FC = () => {
             <button
               type="button"
               onClick={openCreate}
-              className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[var(--action)] px-5 text-sm font-semibold text-[var(--action-ink)] shadow-[0_10px_26px_rgba(18,55,42,.18)] hover:bg-[var(--action-hover)] sm:w-auto"
+              className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[var(--action)] px-5 text-sm font-semibold text-[var(--action-ink)] shadow-[0_10px_26px_rgba(18,55,42,.18)] hover:bg-[var(--action-hover)] sm:h-12 sm:w-auto"
             >
               <Plus className="h-5 w-5" />
               Cadastrar benefício
@@ -462,8 +462,8 @@ export const BenefitsCatalog: React.FC = () => {
           </div>
         )}
 
-        <section className="mt-7">
-          <div className="rounded-2xl border border-[var(--line)] bg-[var(--surface)] p-4 shadow-[0_12px_40px_rgba(18,55,42,.05)] sm:p-5 dark:shadow-[0_18px_50px_rgba(0,0,0,.18)]">
+        <section className="mt-6 sm:mt-7">
+          <div className="rounded-2xl border border-[var(--line)] bg-[var(--surface)] p-3 shadow-[0_12px_40px_rgba(18,55,42,.05)] sm:p-5 dark:shadow-[0_18px_50px_rgba(0,0,0,.18)]">
             <label htmlFor="benefit-search" className="sr-only">Buscar benefício</label>
             <div className="relative">
               <Search className="absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-[var(--muted)]" />
@@ -480,13 +480,13 @@ export const BenefitsCatalog: React.FC = () => {
                 className="h-12 w-full rounded-xl border border-[var(--line)] bg-[var(--surface-muted)] pl-11 pr-4 text-sm text-[var(--ink)] outline-none placeholder:text-[var(--muted)] focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand)]/15"
               />
             </div>
-            <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
+            <div className="mt-3 flex gap-2 overflow-x-auto pb-1 scrollbar-none sm:mt-4">
               {categoriesList.map((category) => (
                 <button
                   type="button"
                   key={category}
                   onClick={() => setSelectedCategory(category)}
-                  className={`h-9 shrink-0 rounded-full px-4 text-xs font-semibold ${
+                  className={`h-9 shrink-0 rounded-full px-3.5 text-xs font-semibold sm:px-4 ${
                     selectedCategory === category
                       ? 'bg-[var(--action)] text-[var(--action-ink)]'
                       : 'border border-[var(--line)] bg-[var(--surface)] text-[var(--muted)] hover:border-[var(--brand)]'
@@ -547,14 +547,14 @@ export const BenefitsCatalog: React.FC = () => {
               )}
             </div>
           ) : (
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            <div className="grid gap-3 sm:gap-4 sm:grid-cols-2 xl:grid-cols-3">
               {filteredBenefits.map((benefit) => {
                 const requested = requestedIds.has(benefit.id);
                 const isOwnCard = activeView === 'mine';
                 return (
                   <article
                     key={benefit.id}
-                    className="flex flex-col rounded-2xl border border-[var(--line)] bg-[var(--surface)] p-5 shadow-[0_8px_30px_rgba(23,63,50,.045)] dark:shadow-[0_16px_38px_rgba(0,0,0,.16)]"
+                    className="flex flex-col rounded-2xl border border-[var(--line)] bg-[var(--surface)] p-4 shadow-[0_8px_30px_rgba(23,63,50,.045)] dark:shadow-[0_16px_38px_rgba(0,0,0,.16)] sm:p-5"
                   >
                     <div className="flex items-start justify-between gap-3">
                       <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--brand-soft)] text-[var(--brand)]">
@@ -638,7 +638,7 @@ export const BenefitsCatalog: React.FC = () => {
             role="dialog"
             aria-modal="true"
             aria-labelledby="create-benefit-title"
-            className="max-h-[96vh] w-full overflow-y-auto rounded-t-3xl bg-[var(--canvas)] text-[var(--ink)] shadow-2xl sm:max-w-xl sm:rounded-3xl"
+            className="max-h-[92dvh] w-full overflow-y-auto rounded-t-3xl bg-[var(--canvas)] text-[var(--ink)] shadow-2xl sm:max-w-xl sm:rounded-3xl"
           >
             <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-[var(--line)] bg-[var(--canvas)] p-5 sm:p-6">
               <div>

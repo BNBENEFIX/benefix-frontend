@@ -65,7 +65,7 @@ interface FieldProps {
 
 const Field: React.FC<FieldProps> = ({ label, icon: Icon, error, children }) => (
   <div className="flex flex-col gap-1.5">
-    <label className="flex items-center gap-1.5 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+    <label className="flex items-center gap-1.5 text-[10px] font-bold text-[var(--muted)] uppercase tracking-wider">
       <Icon className="w-3 h-3" />
       {label}
     </label>
@@ -90,10 +90,10 @@ const StepIndicator: React.FC<StepIndicatorProps> = ({ step }) => (
         <div
           className={`flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold transition-all
             ${s === step
-              ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/30'
+              ? 'bg-[var(--action)] text-[var(--action-ink)] shadow-md'
               : s < step
-              ? 'bg-emerald-200 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400'
-              : 'bg-slate-100 dark:bg-slate-800 text-slate-400'
+              ? 'bg-[var(--brand-soft)] text-[var(--brand-strong)]'
+              : 'bg-[var(--surface-muted)] text-[var(--muted)]'
             }`}
         >
           {s < step ? <CheckCircle2 className="w-4 h-4" /> : s}
@@ -101,7 +101,7 @@ const StepIndicator: React.FC<StepIndicatorProps> = ({ step }) => (
         {s < 2 && (
           <div
             className={`h-0.5 w-10 rounded transition-all ${
-              step > s ? 'bg-emerald-400' : 'bg-slate-200 dark:bg-slate-700'
+              step > s ? 'bg-[var(--brand)]' : 'bg-[var(--line)]'
             }`}
           />
         )}
@@ -111,12 +111,12 @@ const StepIndicator: React.FC<StepIndicatorProps> = ({ step }) => (
 );
 
 const inputCls = (hasError?: string) =>
-  `p-3 bg-slate-50 dark:bg-slate-950 border rounded-xl outline-none text-sm
-   text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:ring-1
+  `p-3 bg-[var(--surface-muted)] border rounded-xl outline-none text-sm
+   text-[var(--ink)] placeholder-[var(--muted)] focus:ring-1
    transition-all disabled:opacity-50 ${
      hasError
        ? 'border-red-400 focus:border-red-500 focus:ring-red-500'
-       : 'border-slate-200 dark:border-slate-800 focus:border-emerald-500 focus:ring-emerald-500'
+       : 'border-[var(--line)] focus:border-[var(--brand)] focus:ring-[var(--brand)]'
    }`;
 
 // ── Indicador de força de senha ───────────────────────────────────────────────
@@ -129,7 +129,7 @@ const PasswordStrength: React.FC<{ password: string }> = ({ password }) => {
     /[^A-Za-z0-9]/.test(password),
   ];
   const strength = checks.filter(Boolean).length;
-  const colors   = ['bg-red-400', 'bg-orange-400', 'bg-yellow-400', 'bg-emerald-400'];
+  const colors   = ['bg-red-400', 'bg-orange-400', 'bg-yellow-400', 'bg-[var(--brand)]'];
   const labels   = ['Muito fraca', 'Fraca', 'Razoável', 'Forte'];
 
   return (
@@ -139,12 +139,12 @@ const PasswordStrength: React.FC<{ password: string }> = ({ password }) => {
           <div
             key={i}
             className={`h-1 flex-1 rounded-full transition-all ${
-              i < strength ? colors[strength - 1] : 'bg-slate-200 dark:bg-slate-700'
+              i < strength ? colors[strength - 1] : 'bg-[var(--line)]'
             }`}
           />
         ))}
       </div>
-      <p className={`text-[10px] font-medium ${strength >= 3 ? 'text-emerald-500' : 'text-slate-400'}`}>
+      <p className={`text-[10px] font-medium ${strength >= 3 ? 'text-[var(--brand)]' : 'text-[var(--muted)]'}`}>
         {labels[strength - 1] ?? 'Digite uma senha'}
       </p>
     </div>
@@ -274,27 +274,27 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
 
   if (success) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 p-4">
+      <div className="min-h-screen flex items-center justify-center bg-[var(--canvas)] p-4 sm:p-6">
         <button
           type="button"
           onClick={toggleTheme}
-          className="fixed top-4 right-4 z-50 rounded-lg p-2.5 text-slate-500 hover:bg-slate-200/60 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-700/60 dark:hover:text-slate-200 transition-colors"
+          className="fixed top-4 right-4 z-50 rounded-lg p-2.5 text-[var(--muted)] hover:bg-[var(--surface-muted)] hover:text-[var(--ink)] transition-colors"
           aria-label="Alternar tema"
         >
           {theme === 'light' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
         </button>
-        <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden p-10 text-center">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-emerald-100 dark:bg-emerald-900/30 rounded-2xl mb-5">
-            <CheckCircle2 className="w-9 h-9 text-emerald-500" />
+        <div className="w-full max-w-md bg-[var(--surface)] rounded-3xl shadow-2xl border border-[var(--line)] overflow-hidden p-8 sm:p-10 text-center">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-[var(--brand-soft)] rounded-2xl mb-5">
+            <CheckCircle2 className="w-9 h-9 text-[var(--brand)]" />
           </div>
-          <h2 className="font-black text-xl text-slate-800 dark:text-slate-100 mb-2">
+          <h2 className="font-black text-xl text-[var(--ink)] mb-2">
             Empresa vinculada com sucesso!
           </h2>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">
+          <p className="text-sm text-[var(--muted)] mb-6">
             Você já pode entrar com seus dados de acesso. Redirecionando para o login...
           </p>
           <div className="flex justify-center">
-            <Loader2 className="w-5 h-5 animate-spin text-emerald-500" />
+            <Loader2 className="w-5 h-5 animate-spin text-[var(--brand)]" />
           </div>
         </div>
       </div>
@@ -304,35 +304,35 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 p-4">
+    <div className="min-h-screen min-h-[100dvh] flex items-center justify-center bg-[var(--canvas)] p-4 sm:p-6">
       <button
         type="button"
         onClick={toggleTheme}
-        className="fixed top-4 right-4 z-50 rounded-lg p-2.5 text-slate-500 hover:bg-slate-200/60 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-700/60 dark:hover:text-slate-200 transition-colors"
+        className="fixed top-4 right-4 z-50 rounded-lg p-2.5 text-[var(--muted)] hover:bg-[var(--surface-muted)] hover:text-[var(--ink)] transition-colors"
         aria-label="Alternar tema"
       >
         {theme === 'light' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
       </button>
-      <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+      <div className="w-full max-w-md bg-[var(--surface)] rounded-3xl shadow-2xl border border-[var(--line)] overflow-hidden max-h-[95dvh] overflow-y-auto">
 
         {/* Header */}
-        <div className="p-8 pb-6 text-center bg-gradient-to-br from-emerald-500 to-teal-600 text-white">
-          <div className="inline-flex items-center justify-center w-14 h-14 bg-white/20 rounded-2xl mb-4">
-            <Sparkles className="w-7 h-7 text-white" />
+        <div className="p-6 sm:p-8 pb-5 sm:pb-6 text-center bg-[var(--action)] text-[var(--action-ink)]">
+          <div className="inline-flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 bg-white/20 rounded-2xl mb-3 sm:mb-4">
+            <Sparkles className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
           </div>
-          <h1 className="font-black text-2xl tracking-tight">BNFix Benefícios</h1>
-          <p className="text-emerald-100 text-xs mt-1">
+          <h1 className="font-black text-xl sm:text-2xl tracking-tight">BNFix Benefícios</h1>
+          <p className="text-white/80 text-xs mt-1">
             Cadastre sua empresa e comece a gerenciar benefícios
           </p>
         </div>
 
         {/* Body */}
-        <div className="p-8 space-y-5">
+        <div className="p-5 sm:p-8 space-y-5">
           <div>
-            <h2 className="font-bold text-lg text-slate-800 dark:text-slate-100">
+            <h2 className="font-bold text-lg text-[var(--ink)]">
               {step === 1 ? 'Dados da Empresa' : 'Acesso do Responsável (RH)'}
             </h2>
-            <p className="text-xs text-slate-400 mt-0.5">
+            <p className="text-xs text-[var(--muted)] mt-0.5">
               {step === 1
                 ? 'Informe o nome e CNPJ da empresa.'
                 : 'Crie as credenciais de quem vai gerenciar os benefícios.'}
@@ -380,7 +380,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
               <button
                 type="button"
                 onClick={handleNext}
-                className="w-full py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-sm rounded-xl shadow-md shadow-emerald-500/20 transition-all cursor-pointer flex items-center justify-center gap-2"
+                className="w-full py-3 bg-[var(--action)] hover:bg-[var(--action-hover)] text-[var(--action-ink)] font-bold text-sm rounded-xl shadow-md transition-all cursor-pointer flex items-center justify-center gap-2"
               >
                 <span>Próximo</span>
                 <ChevronRight className="w-4 h-4" />
@@ -490,7 +490,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
                   type="button"
                   onClick={() => setStep(1)}
                   disabled={loading}
-                  className="flex-1 py-3 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-sm rounded-xl transition-all cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
+                  className="flex-1 py-3 bg-[var(--surface-muted)] hover:bg-[var(--line)] text-[var(--ink)] font-bold text-sm rounded-xl transition-all cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
                 >
                   <ChevronLeft className="w-4 h-4" />
                   <span>Voltar</span>
@@ -499,7 +499,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
                 <button
                   type="submit"
                   disabled={loading}
-                  className="flex-[2] py-3 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-60 text-white font-bold text-sm rounded-xl shadow-md shadow-emerald-500/20 transition-all cursor-pointer flex items-center justify-center gap-2"
+                  className="flex-[2] py-3 bg-[var(--action)] hover:bg-[var(--action-hover)] disabled:opacity-60 text-[var(--action-ink)] font-bold text-sm rounded-xl shadow-md transition-all cursor-pointer flex items-center justify-center gap-2"
                 >
                   {loading ? (
                     <>
@@ -517,12 +517,12 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
             </form>
           )}
 
-          <p className="text-center text-[11px] text-slate-400">
+          <p className="text-center text-[11px] text-[var(--muted)]">
             Já tem uma conta?{' '}
             <button
               type="button"
               onClick={onBackToLogin}
-              className="text-emerald-500 font-bold hover:underline cursor-pointer"
+              className="text-[var(--brand)] font-bold hover:underline cursor-pointer"
             >
               Entrar
             </button>

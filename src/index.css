@@ -61,6 +61,9 @@
 html {
   scroll-behavior: smooth;
   background: var(--canvas);
+  /* Prevent text size adjustment on orientation change (iOS/Android) */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 body {
@@ -71,6 +74,21 @@ body {
   font-family: var(--font-sans);
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  /* Safe area insets for notched devices (iPhone X+, Android punch-hole) */
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  /* Prevent pull-to-refresh on mobile when scrolling within the app */
+  overscroll-behavior-y: contain;
+}
+
+/* Remove tap highlight on mobile WebKit browsers */
+button,
+a,
+[role="button"],
+input,
+select,
+textarea {
+  -webkit-tap-highlight-color: transparent;
 }
 
 button,
@@ -80,6 +98,21 @@ select,
 textarea {
   transition-duration: 160ms;
   transition-timing-function: ease-out;
+}
+
+/* Ensure inputs don't zoom on iOS (minimum 16px font-size) */
+@media screen and (max-width: 767px) {
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  input[type="search"],
+  input[type="tel"],
+  input[type="url"],
+  select,
+  textarea {
+    font-size: 16px;
+  }
 }
 
 button:focus-visible,
@@ -164,4 +197,29 @@ textarea {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* ── Mobile utility classes ─────────────────────────────────────────────────── */
+
+/* Hide scrollbar but keep scroll functional (used for horizontal nav, pills) */
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
+/* Touch manipulation for scrollable areas (prevents 300ms delay) */
+.touch-pan-x {
+  touch-action: pan-x;
+}
+.touch-pan-y {
+  touch-action: pan-y;
+}
+
+/* Safe area aware sticky elements */
+.sticky-safe {
+  position: sticky;
+  top: env(safe-area-inset-top, 0px);
 }

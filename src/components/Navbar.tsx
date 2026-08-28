@@ -195,14 +195,14 @@ export const Navbar: React.FC = () => {
 
   return (
     <>
-      <nav className="sticky top-0 z-50 border-b border-[var(--line)] bg-[var(--surface)] px-4 py-3 transition-colors sm:px-6">
-        <div className="mx-auto flex max-w-[1180px] items-center justify-between gap-3">
-          <div className="flex min-w-0 items-center gap-3">
-            <div className="flex shrink-0 items-center gap-2.5">
+      <nav className="sticky top-0 z-50 border-b border-[var(--line)] bg-[var(--surface)] px-3 py-2.5 transition-colors sm:px-6 sm:py-3">
+        <div className="mx-auto flex max-w-[1180px] items-center justify-between gap-2 sm:gap-3">
+          <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+            <div className="flex shrink-0 items-center gap-2 sm:gap-2.5">
               <img
                 src="/favicon.png"
                 alt="BNFix"
-                className="h-10 w-10 rounded-lg object-contain"
+                className="h-9 w-9 rounded-lg object-contain sm:h-10 sm:w-10"
               />
               <div className="hidden sm:block">
                 <span className="block text-base font-semibold leading-none text-[var(--ink)]">BNFix</span>
@@ -213,7 +213,7 @@ export const Navbar: React.FC = () => {
             </div>
 
             {isManager && (
-              <div ref={companyMenuRef} className="relative min-w-0 border-l border-[var(--line)] pl-3">
+              <div ref={companyMenuRef} className="relative min-w-0 border-l border-[var(--line)] pl-2 sm:pl-3">
                 <button
                   type="button"
                   onClick={() => {
@@ -222,7 +222,7 @@ export const Navbar: React.FC = () => {
                   }}
                   aria-expanded={companyMenuOpen}
                   aria-haspopup="menu"
-                  className="flex h-10 max-w-[142px] items-center gap-2 rounded-lg px-2 text-left hover:bg-[var(--surface-muted)] sm:max-w-[190px] sm:px-3 md:max-w-[260px]"
+                  className="flex h-10 max-w-[120px] items-center gap-1.5 rounded-lg px-1.5 text-left hover:bg-[var(--surface-muted)] sm:max-w-[190px] sm:gap-2 sm:px-3 md:max-w-[260px]"
                 >
                   <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-[var(--brand-soft)] text-[var(--brand-strong)]">
                     {switchingCompany
@@ -322,7 +322,7 @@ export const Navbar: React.FC = () => {
             )}
           </div>
 
-          <div className="flex shrink-0 items-center gap-1 sm:gap-3">
+          <div className="flex shrink-0 items-center gap-0.5 sm:gap-3">
             {isEmployee && <AnnouncementCenter />}
 
             <button
@@ -336,7 +336,7 @@ export const Navbar: React.FC = () => {
             </button>
 
             {user && (
-              <div className="flex items-center gap-2 border-l border-[var(--line)] pl-2 sm:pl-3">
+              <div className="flex items-center gap-1.5 border-l border-[var(--line)] pl-1.5 sm:gap-2 sm:pl-3">
                 <span className="hidden h-9 w-9 items-center justify-center rounded-full bg-[var(--brand-soft)] text-sm font-semibold text-[var(--brand-strong)] sm:flex">
                   {user.name?.charAt(0).toUpperCase()}
                 </span>

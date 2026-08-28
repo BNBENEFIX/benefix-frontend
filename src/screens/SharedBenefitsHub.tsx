@@ -136,24 +136,24 @@ export function SharedBenefitsHub() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f5f6f2] px-4 py-6 text-[#18211d] sm:px-6 sm:py-9">
+    <div className="min-h-screen bg-[#f5f6f2] px-3 py-5 text-[#18211d] sm:px-6 sm:py-9">
       <div className="mx-auto max-w-[1180px]">
-        <header className="flex flex-col gap-5 border-b border-[#d8dfda] pb-7 sm:flex-row sm:items-end sm:justify-between">
+        <header className="flex flex-col gap-4 border-b border-[#d8dfda] pb-6 sm:flex-row sm:items-end sm:justify-between sm:gap-5 sm:pb-7">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[.14em] text-[#2f7658]">
               Seus benefícios
             </p>
-            <h1 className="mt-3 font-display text-3xl tracking-[-.03em] sm:text-4xl">
+            <h1 className="mt-2 font-display text-2xl tracking-[-.03em] sm:mt-3 sm:text-3xl md:text-4xl">
               Olá, {user?.name?.split(' ')[0]}.
             </h1>
-            <p className="mt-2 max-w-xl text-sm leading-6 text-[#68746d]">
+            <p className="mt-1.5 max-w-xl text-sm leading-6 text-[#68746d] sm:mt-2">
               Escolha um benefício e mostre o QR Code no local de atendimento.
             </p>
           </div>
           <button
             type="button"
             onClick={() => load()}
-            className="inline-flex h-11 items-center justify-center gap-2 self-start rounded-lg border border-[#cfd8d2] bg-white px-4 text-sm font-semibold text-[#536159] hover:bg-[#f0f3ef]"
+            className="inline-flex h-10 items-center justify-center gap-2 self-start rounded-lg border border-[#cfd8d2] bg-white px-3 text-sm font-semibold text-[#536159] hover:bg-[#f0f3ef] sm:h-11 sm:px-4"
           >
             <RefreshCw className="h-4 w-4" />
             Atualizar
@@ -198,13 +198,13 @@ export function SharedBenefitsHub() {
               </p>
             </div>
           ) : (
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            <div className="grid gap-3 sm:gap-4 sm:grid-cols-2 xl:grid-cols-3">
               {benefits.map((benefit) => {
                 const noUsesLeft = benefit.remainingUses <= 0;
                 return (
                   <article
                     key={benefit.benefitId}
-                    className="flex flex-col rounded-2xl border border-[#d5ddd8] bg-white p-5 shadow-[0_8px_30px_rgba(23,63,50,.05)]"
+                    className="flex flex-col rounded-2xl border border-[#d5ddd8] bg-white p-4 shadow-[0_8px_30px_rgba(23,63,50,.05)] sm:p-5"
                   >
                     <div className="flex items-start justify-between gap-4">
                       <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#e7efe9] text-[#2f7658]">
@@ -287,7 +287,7 @@ export function SharedBenefitsHub() {
             role="dialog"
             aria-modal="true"
             aria-labelledby="qr-title"
-            className="max-h-[95vh] w-full overflow-y-auto rounded-t-3xl bg-white p-5 shadow-2xl sm:max-w-md sm:rounded-3xl sm:p-7"
+            className="max-h-[92dvh] w-full overflow-y-auto rounded-t-3xl bg-white p-4 shadow-2xl sm:max-w-md sm:rounded-3xl sm:p-7"
           >
             <div className="flex items-start justify-between gap-4">
               <div>

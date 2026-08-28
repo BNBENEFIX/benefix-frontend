@@ -395,94 +395,94 @@ export const DashboardRH: React.FC = () => {
   // ── render ─────────────────────────────────────────────────────────────────
 
   return (
-    <div className="p-6 space-y-8 text-left fade-in">
+    <div className="p-4 sm:p-6 space-y-6 sm:space-y-8 text-left fade-in">
       <Toast visible={toast.visible} message={toast.message} type={toast.type}
         onClose={() => setToast({ ...toast, visible: false })} />
 
       {/* ── Cabeçalho ────────────────────────────────────────────────────── */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="px-2.5 py-0.5 rounded-full text-[9px] bg-emerald-500/10 text-emerald-600 font-extrabold uppercase tracking-widest">
+      <div className="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2 mb-1">
+            <span className="px-2.5 py-0.5 rounded-full text-[9px] bg-emerald-500/10 text-emerald-600 font-extrabold uppercase tracking-widest truncate max-w-[200px] sm:max-w-none">
               {company?.name ?? 'Minha Empresa'}
             </span>
             {company?.cnpj && (
-              <span className="text-[9px] font-mono text-slate-400">CNPJ: {company.cnpj}</span>
+              <span className="text-[9px] font-mono text-slate-400 hidden sm:inline">CNPJ: {company.cnpj}</span>
             )}
           </div>
-          <h2 className="font-display font-black text-xl text-slate-800 dark:text-neutral-50">
+          <h2 className="font-display font-black text-lg sm:text-xl text-slate-800 dark:text-neutral-50">
             Portal de Gestão de Colaboradores
           </h2>
           <p className="text-xs text-slate-400 mt-0.5">
             Gerencie o time, ative ou desative acessos e publique comunicados internos.
           </p>
         </div>
-        <div className="flex flex-wrap gap-2.5">
+        <div className="flex flex-wrap gap-2 sm:gap-2.5 sm:shrink-0">
           <button onClick={() => handleExportReport('EXCEL')}
-            className="flex items-center gap-1.5 px-4 py-2 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 text-slate-700 dark:text-slate-300 font-bold text-xs rounded-xl shadow-sm transition-all cursor-pointer">
+            className="flex items-center gap-1.5 px-3 py-2 sm:px-4 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 text-slate-700 dark:text-slate-300 font-bold text-xs rounded-xl shadow-sm transition-all cursor-pointer">
             <FileSpreadsheet className="w-4 h-4 text-emerald-500" /> Excel
           </button>
           <button onClick={() => handleExportReport('PDF')}
-            className="flex items-center gap-1.5 px-4 py-2 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 text-slate-700 dark:text-slate-300 font-bold text-xs rounded-xl shadow-sm transition-all cursor-pointer">
+            className="flex items-center gap-1.5 px-3 py-2 sm:px-4 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 text-slate-700 dark:text-slate-300 font-bold text-xs rounded-xl shadow-sm transition-all cursor-pointer">
             PDF
           </button>
           <button onClick={() => { setFormData(EMPTY_FORM); setFormError(''); setShowModal(true); }}
-            className="flex items-center gap-1.5 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs rounded-xl shadow-md transition-all cursor-pointer">
-            <UserPlus className="w-4 h-4" /> Novo Colaborador
+            className="flex items-center gap-1.5 px-3 py-2 sm:px-4 bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs rounded-xl shadow-md transition-all cursor-pointer">
+            <UserPlus className="w-4 h-4" /> <span className="hidden xs:inline">Novo</span> Colaborador
           </button>
         </div>
       </div>
 
 
       {/* ── KPIs ─────────────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="p-5 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 rounded-2xl flex items-center justify-between shadow-sm">
-          <div className="space-y-1">
-            <span className="text-xs text-slate-400 font-bold uppercase tracking-wider">Total de Colaboradores</span>
-            <div className="font-display font-extrabold text-2xl text-slate-800 dark:text-slate-100">{employees.length}</div>
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4 lg:gap-6">
+        <div className="p-4 sm:p-5 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 rounded-2xl flex items-center justify-between shadow-sm">
+          <div className="space-y-1 min-w-0">
+            <span className="text-[10px] sm:text-xs text-slate-400 font-bold uppercase tracking-wider">Total</span>
+            <div className="font-display font-extrabold text-xl sm:text-2xl text-slate-800 dark:text-slate-100">{employees.length}</div>
           </div>
-          <div className="w-12 h-12 rounded-xl bg-blue-50 dark:bg-blue-950/20 text-blue-500 flex items-center justify-center">
-            <Users className="w-6 h-6" />
-          </div>
-        </div>
-
-        <div className="p-5 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 rounded-2xl flex items-center justify-between shadow-sm">
-          <div className="space-y-1">
-            <span className="text-xs text-slate-400 font-bold uppercase tracking-wider">Colaboradores Ativos</span>
-            <div className="font-display font-extrabold text-2xl text-emerald-600 dark:text-emerald-400">{activeCount}</div>
-          </div>
-          <div className="w-12 h-12 rounded-xl bg-emerald-50 dark:bg-emerald-950/20 text-emerald-500 flex items-center justify-center">
-            <UserCheck className="w-6 h-6" />
+          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-blue-50 dark:bg-blue-950/20 text-blue-500 flex items-center justify-center shrink-0">
+            <Users className="w-5 h-5 sm:w-6 sm:h-6" />
           </div>
         </div>
 
-        <div className="p-5 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 rounded-2xl flex items-center justify-between shadow-sm">
-          <div className="space-y-1">
-            <span className="text-xs text-slate-400 font-bold uppercase tracking-wider">Inativos / Bloqueados</span>
-            <div className="font-display font-extrabold text-2xl text-red-500 dark:text-red-400">{inactiveCount}</div>
+        <div className="p-4 sm:p-5 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 rounded-2xl flex items-center justify-between shadow-sm">
+          <div className="space-y-1 min-w-0">
+            <span className="text-[10px] sm:text-xs text-slate-400 font-bold uppercase tracking-wider">Ativos</span>
+            <div className="font-display font-extrabold text-xl sm:text-2xl text-emerald-600 dark:text-emerald-400">{activeCount}</div>
           </div>
-          <div className="w-12 h-12 rounded-xl bg-red-50 dark:bg-red-950/20 text-red-500 flex items-center justify-center">
-            <UserX className="w-6 h-6" />
+          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-emerald-50 dark:bg-emerald-950/20 text-emerald-500 flex items-center justify-center shrink-0">
+            <UserCheck className="w-5 h-5 sm:w-6 sm:h-6" />
           </div>
         </div>
 
-        <div className="p-5 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 rounded-2xl flex items-center justify-between shadow-sm">
-          <div className="space-y-1">
-            <span className="text-xs text-slate-400 font-bold uppercase tracking-wider">Benefícios Ativos</span>
-            <div className="font-display font-extrabold text-2xl text-slate-800 dark:text-slate-100">
+        <div className="p-4 sm:p-5 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 rounded-2xl flex items-center justify-between shadow-sm">
+          <div className="space-y-1 min-w-0">
+            <span className="text-[10px] sm:text-xs text-slate-400 font-bold uppercase tracking-wider">Inativos</span>
+            <div className="font-display font-extrabold text-xl sm:text-2xl text-red-500 dark:text-red-400">{inactiveCount}</div>
+          </div>
+          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-red-50 dark:bg-red-950/20 text-red-500 flex items-center justify-center shrink-0">
+            <UserX className="w-5 h-5 sm:w-6 sm:h-6" />
+          </div>
+        </div>
+
+        <div className="p-4 sm:p-5 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 rounded-2xl flex items-center justify-between shadow-sm">
+          <div className="space-y-1 min-w-0">
+            <span className="text-[10px] sm:text-xs text-slate-400 font-bold uppercase tracking-wider">Benefícios</span>
+            <div className="font-display font-extrabold text-xl sm:text-2xl text-slate-800 dark:text-slate-100">
               {metrics?.activeBenefitsCount ?? '—'}
             </div>
           </div>
-          <div className="w-12 h-12 rounded-xl bg-amber-50 dark:bg-amber-950/20 text-amber-500 flex items-center justify-center">
-            <Activity className="w-6 h-6" />
+          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-amber-50 dark:bg-amber-950/20 text-amber-500 flex items-center justify-center shrink-0">
+            <Activity className="w-5 h-5 sm:w-6 sm:h-6" />
           </div>
         </div>
       </div>
 
 
       {/* ── Tabela de Colaboradores ───────────────────────────────────────── */}
-      <div className="p-6 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 rounded-2xl space-y-4 shadow-sm">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="p-4 sm:p-6 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 rounded-2xl space-y-4 shadow-sm">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h4 className="font-bold text-md text-slate-800 dark:text-slate-100">Colaboradores da Empresa</h4>
             <p className="text-xs text-slate-400 mt-0.5">
@@ -491,15 +491,15 @@ export const DashboardRH: React.FC = () => {
           </div>
 
           {/* Search + filtro */}
-          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+          <div className="flex flex-col gap-2 w-full sm:flex-row sm:w-auto">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
               <input type="text" placeholder="Buscar por nome, e-mail ou CPF..."
                 value={searchTerm} onChange={e => setSearchTerm(e.target.value)}
-                className="pl-9 pr-3 py-2 text-xs bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl outline-none w-full sm:w-64 focus:border-emerald-500 transition-all text-slate-800 dark:text-slate-100" />
+                className="pl-9 pr-3 py-2.5 text-xs bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl outline-none w-full sm:w-64 focus:border-emerald-500 transition-all text-slate-800 dark:text-slate-100" />
             </div>
             <select value={filterStatus} onChange={e => setFilterStatus(e.target.value as any)}
-              className="px-3 py-2 text-xs bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl outline-none text-slate-700 dark:text-slate-300 cursor-pointer">
+              className="px-3 py-2.5 text-xs bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl outline-none text-slate-700 dark:text-slate-300 cursor-pointer w-full sm:w-auto">
               <option value="todos">Todos</option>
               <option value="ativos">Somente Ativos</option>
               <option value="inativos">Somente Inativos</option>
@@ -521,84 +521,162 @@ export const DashboardRH: React.FC = () => {
             </div>
           </div>
         ) : filtered.length === 0 ? (
-          <div className="p-10 text-center border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-2xl">
+          <div className="p-8 sm:p-10 text-center border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-2xl">
             <Users className="w-8 h-8 text-slate-300 dark:text-slate-700 mx-auto mb-3" />
             <p className="text-sm font-semibold text-slate-600 dark:text-slate-400">
               {employees.length === 0 ? 'Nenhum colaborador cadastrado ainda.' : 'Nenhum resultado para esse filtro.'}
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs border-collapse">
-              <thead>
-                <tr className="border-b border-slate-150 dark:border-slate-800 text-slate-400">
-                  <th className="py-3 px-2 font-bold uppercase tracking-wider">Nome</th>
-                  <th className="py-3 px-2 font-bold uppercase tracking-wider">E-mail</th>
-                  <th className="py-3 px-2 font-bold uppercase tracking-wider">CPF</th>
-                  <th className="py-3 px-2 font-bold uppercase tracking-wider text-center">Status</th>
-                  <th className="py-3 px-2 font-bold uppercase tracking-wider text-right">Ações</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
-                {filtered.map(emp => (
-                  <React.Fragment key={emp.id}>
-                    <tr
-                      className="hover:bg-slate-50/40 dark:hover:bg-slate-800/10 cursor-pointer"
-                      onClick={() => setExpandedId(expandedId === emp.id ? null : emp.id)}
-                    >
-                      <td className="py-3 px-2 font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
-                        <div className="w-7 h-7 rounded-full bg-emerald-500/10 text-emerald-600 flex items-center justify-center font-black text-[10px] shrink-0">
-                          {emp.name.charAt(0).toUpperCase()}
+          <>
+            {/* Mobile: card-based list */}
+            <div className="space-y-3 md:hidden">
+              {filtered.map(emp => (
+                <div
+                  key={emp.id}
+                  className="rounded-xl border border-slate-100 bg-slate-50/50 p-4 dark:border-slate-800 dark:bg-slate-950/20"
+                  onClick={() => setExpandedId(expandedId === emp.id ? null : emp.id)}
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-9 h-9 rounded-full bg-emerald-500/10 text-emerald-600 flex items-center justify-center font-black text-xs shrink-0">
+                        {emp.name.charAt(0).toUpperCase()}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-bold text-slate-800 dark:text-slate-100 truncate">{emp.name}</p>
+                        <p className="text-xs text-slate-400 truncate">{emp.email}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                        isEmployeeActive(emp)
+                          ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+                          : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                      }`}>
+                        {isEmployeeActive(emp) ? 'Ativo' : 'Inativo'}
+                      </span>
+                      {expandedId === emp.id
+                        ? <ChevronUp className="w-4 h-4 text-slate-400" />
+                        : <ChevronDown className="w-4 h-4 text-slate-400" />}
+                    </div>
+                  </div>
+                  {expandedId === emp.id && (
+                    <div className="mt-3 pt-3 border-t border-slate-200 dark:border-slate-800 space-y-3">
+                      <div className="grid grid-cols-2 gap-3 text-[11px]">
+                        <div>
+                          <span className="text-slate-400 font-bold uppercase block">CPF</span>
+                          <span className="font-mono text-slate-700 dark:text-slate-300">{emp.cpf}</span>
                         </div>
-                        {emp.name}
-                        {expandedId === emp.id
-                          ? <ChevronUp className="w-3.5 h-3.5 text-slate-400 ml-auto" />
-                          : <ChevronDown className="w-3.5 h-3.5 text-slate-400 ml-auto" />}
-                      </td>
-                      <td className="py-3 px-2 text-slate-500 dark:text-slate-400">{emp.email}</td>
-                      <td className="py-3 px-2 font-mono text-slate-400">{emp.cpf}</td>
-                      <td className="py-3 px-2 text-center">
-                        <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
-                          isEmployeeActive(emp)
-                            ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
-                            : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-                        }`}>
-                          {isEmployeeActive(emp) ? 'Ativo' : 'Inativo'}
-                        </span>
-                      </td>
-                      <td className="py-3 px-2 text-right" onClick={e => e.stopPropagation()}>
+                        <div>
+                          <span className="text-slate-400 font-bold uppercase block">ID</span>
+                          <span className="font-mono text-slate-700 dark:text-slate-300">#{emp.id}</span>
+                        </div>
+                      </div>
+                      <div className="flex gap-2" onClick={e => e.stopPropagation()}>
                         {isEmployeeActive(emp) ? (
                           <button onClick={() => handleDisable(emp)}
-                            className="px-3 py-1 text-[10px] font-bold bg-red-50 text-red-600 hover:bg-red-500 hover:text-white border border-red-200 dark:border-red-900/30 dark:bg-red-900/10 dark:text-red-400 rounded-lg transition-all cursor-pointer">
+                            className="flex-1 px-3 py-2 text-xs font-bold bg-red-50 text-red-600 hover:bg-red-500 hover:text-white border border-red-200 dark:border-red-900/30 dark:bg-red-900/10 dark:text-red-400 rounded-lg transition-all">
                             Desativar
                           </button>
                         ) : (
                           <button onClick={() => handleActivate(emp)}
-                            className="px-3 py-1 text-[10px] font-bold bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white border border-emerald-200 dark:border-emerald-900/30 dark:bg-emerald-900/10 dark:text-emerald-400 rounded-lg transition-all cursor-pointer">
+                            className="flex-1 px-3 py-2 text-xs font-bold bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white border border-emerald-200 dark:border-emerald-900/30 dark:bg-emerald-900/10 dark:text-emerald-400 rounded-lg transition-all">
                             Ativar
                           </button>
                         )}
-                      </td>
-                    </tr>
-                    {expandedId === emp.id && (
-                      <tr className="bg-slate-50/60 dark:bg-slate-950/30">
-                        <td colSpan={5} className="px-4 py-3">
-                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-[11px]">
-                            <div>
-                              <span className="text-slate-400 font-bold uppercase block">ID Backend</span>
-                              <span className="font-mono text-slate-700 dark:text-slate-300">#{emp.id}</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop: table view */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr className="border-b border-slate-150 dark:border-slate-800 text-slate-400">
+                    <th className="py-3 px-2 font-bold uppercase tracking-wider">Nome</th>
+                    <th className="py-3 px-2 font-bold uppercase tracking-wider">E-mail</th>
+                    <th className="py-3 px-2 font-bold uppercase tracking-wider">CPF</th>
+                    <th className="py-3 px-2 font-bold uppercase tracking-wider text-center">Status</th>
+                    <th className="py-3 px-2 font-bold uppercase tracking-wider text-right">Ações</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
+                  {filtered.map(emp => (
+                    <React.Fragment key={emp.id}>
+                      <tr
+                        className="hover:bg-slate-50/40 dark:hover:bg-slate-800/10 cursor-pointer"
+                        onClick={() => setExpandedId(expandedId === emp.id ? null : emp.id)}
+                      >
+                        <td className="py-3 px-2 font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                          <div className="w-7 h-7 rounded-full bg-emerald-500/10 text-emerald-600 flex items-center justify-center font-black text-[10px] shrink-0">
+                            {emp.name.charAt(0).toUpperCase()}
+                          </div>
+                          {emp.name}
+                          {expandedId === emp.id
+                            ? <ChevronUp className="w-3.5 h-3.5 text-slate-400 ml-auto" />
+                            : <ChevronDown className="w-3.5 h-3.5 text-slate-400 ml-auto" />}
+                        </td>
+                        <td className="py-3 px-2 text-slate-500 dark:text-slate-400">{emp.email}</td>
+                        <td className="py-3 px-2 font-mono text-slate-400">{emp.cpf}</td>
+                        <td className="py-3 px-2 text-center">
+                          <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                            isEmployeeActive(emp)
+                              ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+                              : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                          }`}>
+                            {isEmployeeActive(emp) ? 'Ativo' : 'Inativo'}
+                          </span>
+                        </td>
+                        <td className="py-3 px-2 text-right" onClick={e => e.stopPropagation()}>
+                          {isEmployeeActive(emp) ? (
+                            <button onClick={() => handleDisable(emp)}
+                              className="px-3 py-1 text-[10px] font-bold bg-red-50 text-red-600 hover:bg-red-500 hover:text-white border border-red-200 dark:border-red-900/30 dark:bg-red-900/10 dark:text-red-400 rounded-lg transition-all cursor-pointer">
+                              Desativar
+                            </button>
+                          ) : (
+                            <button onClick={() => handleActivate(emp)}
+                              className="px-3 py-1 text-[10px] font-bold bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white border border-emerald-200 dark:border-emerald-900/30 dark:bg-emerald-900/10 dark:text-emerald-400 rounded-lg transition-all cursor-pointer">
+                              Ativar
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                      {expandedId === emp.id && (
+                        <tr className="bg-slate-50/60 dark:bg-slate-950/30">
+                          <td colSpan={5} className="px-4 py-3">
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-[11px]">
+                              <div>
+                                <span className="text-slate-400 font-bold uppercase block">ID Backend</span>
+                                <span className="font-mono text-slate-700 dark:text-slate-300">#{emp.id}</span>
+                              </div>
+                              <div>
+                                <span className="text-slate-400 font-bold uppercase block">Empresa ID</span>
+                                <span className="font-mono text-slate-700 dark:text-slate-300">#{emp.companyId}</span>
+                              </div>
+                              <div>
+                                <span className="text-slate-400 font-bold uppercase block">CPF</span>
+                                <span className="font-mono text-slate-700 dark:text-slate-300">{emp.cpf}</span>
+                              </div>
+                              <div>
+                                <span className="text-slate-400 font-bold uppercase block">Situação</span>
+                                <span className={`font-bold ${isEmployeeActive(emp) ? 'text-emerald-600' : 'text-red-500'}`}>
+                                  {isEmployeeActive(emp) ? 'Acesso liberado' : 'Acesso bloqueado'}
+                                </span>
+                              </div>
                             </div>
-                            <div>
-                              <span className="text-slate-400 font-bold uppercase block">Empresa ID</span>
-                              <span className="font-mono text-slate-700 dark:text-slate-300">#{emp.companyId}</span>
-                            </div>
-                            <div>
-                              <span className="text-slate-400 font-bold uppercase block">CPF</span>
-                              <span className="font-mono text-slate-700 dark:text-slate-300">{emp.cpf}</span>
-                            </div>
-                            <div>
-                              <span className="text-slate-400 font-bold uppercase block">Situação</span>
-                              <span className={`font-bold ${isEmployeeActive(emp) ? 'text-emerald-600' : 'text-red-500'}`}>
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}(emp) ? 'text-emerald-600' : 'text-red-500'}`}>
                                 {isEmployeeActive(emp) ? 'Acesso liberado' : 'Acesso bloqueado'}
                               </span>
                             </div>
