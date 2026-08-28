@@ -1,10 +1,9 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import {
   AlertTriangle,
-  Building2,
   CheckCircle2,
   ChevronDown,
   Clock3,
@@ -18,7 +17,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { sharedBenefitService } from '../services/sharedBenefitService';
-import type { RedemptionToken, SharedBenefit, SharedBenefitRequest } from '../types';
+import type { EmployeeBenefitResponse, RedemptionToken } from '../types';
 
 type FeedbackKind = 'success' | 'error' | 'info';
 
@@ -37,6 +36,29 @@ const apiMessage = (error: unknown) => {
   return candidate?.response?.data?.message ?? 'Tente novamente em instantes.';
 };
 
+const issueTokenError = (error: unknown): Feedback => {
+  const status = (error as { response?: { status?: number } })?.response?.status;
+  if (status === 403) {
+    return {
+      kind: 'error',
+      title: 'Benefício indisponível',
+      detail: 'Este benefício não está mais disponível para você. A parceria da sua empresa pode ter sido desativada.',
+    };
+  }
+  if (status === 409 || status === 400) {
+    return {
+      kind: 'error',
+      title: 'Limite de uso atingido',
+      detail: apiMessage(error),
+    };
+  }
+  return {
+    kind: 'error',
+    title: 'Não foi possível gerar o QR Code',
+    detail: apiMessage(error),
+  };
+};
+
 const feedbackClasses: Record<FeedbackKind, string> = {
   success: 'border-[#b9d7c6] bg-[#edf8f1] text-[#235c46]',
   error: 'border-[#efc2bc] bg-[#fff1ef] text-[#8f3730]',
@@ -45,26 +67,18 @@ const feedbackClasses: Record<FeedbackKind, string> = {
 
 export function SharedBenefitsHub() {
   const { user } = useAuth();
-  const [mine, setMine] = useState<SharedBenefit[]>([]);
-  const [available, setAvailable] = useState<SharedBenefit[]>([]);
-  const [requests, setRequests] = useState<SharedBenefitRequest[]>([]);
+  const [benefits, setBenefits] = useState<EmployeeBenefitResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<number | null>(null);
   const [feedback, setFeedback] = useState<Feedback | null>(null);
-  const [qr, setQr] = useState<{ benefit: SharedBenefit; value: RedemptionToken } | null>(null);
+  const [qr, setQr] = useState<{ benefit: EmployeeBenefitResponse; value: RedemptionToken } | null>(null);
   const [seconds, setSeconds] = useState(0);
 
   const load = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
     try {
-      const [myBenefits, shared, myRequests] = await Promise.all([
-        sharedBenefitService.mine(),
-        sharedBenefitService.available(),
-        sharedBenefitService.myRequests(),
-      ]);
-      setMine(myBenefits);
-      setAvailable(shared);
-      setRequests(myRequests);
+      const myBenefits = await sharedBenefitService.getMyBenefits();
+      setBenefits(myBenefits);
     } catch (error) {
       if (!silent) {
         setFeedback({
@@ -95,54 +109,14 @@ export function SharedBenefitsHub() {
     return () => window.clearInterval(interval);
   }, [qr]);
 
-  const requestStatus = useMemo(
-    () => new Map(requests.map((item) => [item.benefitId, item])),
-    [requests],
-  );
-
-  const handleRequest = async (benefit: SharedBenefit) => {
-    setBusyId(benefit.id);
+  const showQr = async (benefit: EmployeeBenefitResponse) => {
+    setBusyId(benefit.benefitId);
     setFeedback(null);
     try {
-      await sharedBenefitService.request(benefit.id);
-      setFeedback({
-        kind: 'success',
-        title: 'Pedido enviado',
-        detail: `O estabelecimento recebeu seu pedido para usar ${benefit.name}. Acompanhe a resposta nesta tela.`,
-      });
-      await load(true);
-    } catch (error) {
-      setFeedback({
-        kind: 'error',
-        title: 'Não foi possível enviar o pedido',
-        detail: apiMessage(error),
-      });
-    } finally {
-      setBusyId(null);
-    }
-  };
-
-  const showQr = async (benefit: SharedBenefit) => {
-    if (!benefit.subscriptionId) {
-      setFeedback({
-        kind: 'error',
-        title: 'QR Code indisponível',
-        detail: 'Atualize a página. Se o problema continuar, fale com o responsável da sua empresa.',
-      });
-      return;
-    }
-
-    setBusyId(benefit.id);
-    setFeedback(null);
-    try {
-      const value = await sharedBenefitService.issueToken(benefit.subscriptionId);
+      const value = await sharedBenefitService.issueToken(benefit.benefitId);
       setQr({ benefit, value });
     } catch (error) {
-      setFeedback({
-        kind: 'error',
-        title: 'Não foi possível gerar o QR Code',
-        detail: apiMessage(error),
-      });
+      setFeedback(issueTokenError(error));
     } finally {
       setBusyId(null);
     }
@@ -204,181 +178,107 @@ export function SharedBenefitsHub() {
         <section className="mt-8">
           <div className="mb-5 flex items-end justify-between gap-4">
             <div>
-              <h2 className="text-2xl font-semibold tracking-[-.02em]">Prontos para usar</h2>
+              <h2 className="text-2xl font-semibold tracking-[-.02em]">Disponíveis para você</h2>
               <p className="mt-1 text-sm text-[#68746d]">Toque no botão para abrir o QR Code.</p>
             </div>
             <span className="shrink-0 text-xs font-medium text-[#76827b]">
-              {mine.length} {mine.length === 1 ? 'benefício' : 'benefícios'}
+              {benefits.length} {benefits.length === 1 ? 'benefício' : 'benefícios'}
             </span>
           </div>
 
-          {mine.length === 0 ? (
+          {benefits.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-[#c8d1cb] bg-white/60 p-8 sm:p-10">
               <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#e7efe9] text-[#2f7658]">
                 <TicketCheck className="h-5 w-5" />
               </span>
               <h3 className="mt-5 text-lg font-semibold">Nenhum benefício liberado ainda</h3>
               <p className="mt-2 max-w-lg text-sm leading-6 text-[#68746d]">
-                Peça um benefício disponível abaixo. Quando o estabelecimento aprovar, ele
-                aparecerá aqui.
+                Os benefícios aparecem aqui automaticamente quando a sua empresa tem uma
+                parceria ativa com o estabelecimento.
               </p>
             </div>
           ) : (
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {mine.map((benefit) => (
-                <article
-                  key={benefit.id}
-                  className="flex flex-col rounded-2xl border border-[#d5ddd8] bg-white p-5 shadow-[0_8px_30px_rgba(23,63,50,.05)]"
-                >
-                  <div className="flex items-start justify-between gap-4">
-                    <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#e7efe9] text-[#2f7658]">
-                      <TicketCheck className="h-5 w-5" />
-                    </span>
-                    <span className="rounded-full bg-[#edf8f1] px-3 py-1 text-xs font-semibold text-[#2f7658]">
-                      Liberado
-                    </span>
-                  </div>
-                  <h3 className="mt-5 text-lg font-semibold tracking-[-.015em]">{benefit.name}</h3>
-                  <p className="mt-2 flex items-center gap-2 text-sm text-[#68746d]">
-                    <Store className="h-4 w-4 shrink-0" />
-                    {benefit.providerName}
-                  </p>
-                  {benefit.description && (
-                    <p className="mt-3 line-clamp-2 text-sm leading-6 text-[#68746d]">
-                      {benefit.description}
-                    </p>
-                  )}
-                  <div className="mt-5 border-t border-[#edf0ed] pt-4">
-                    <p className="mb-3 text-xs text-[#76827b]">{formatDate(benefit.validUntil)}</p>
-                    <button
-                      type="button"
-                      onClick={() => showQr(benefit)}
-                      disabled={busyId === benefit.id}
-                      className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#173f32] px-4 text-sm font-semibold text-white hover:bg-[#102e25] disabled:opacity-60"
-                    >
-                      {busyId === benefit.id
-                        ? <Loader2 className="h-5 w-5 animate-spin" />
-                        : <QrCode className="h-5 w-5" />}
-                      {busyId === benefit.id ? 'Gerando QR Code...' : 'Mostrar QR Code'}
-                    </button>
-                  </div>
-                </article>
-              ))}
-            </div>
-          )}
-        </section>
-
-        <section className="mt-12 border-t border-[#d8dfda] pt-9">
-          <div className="mb-5">
-            <p className="text-xs font-semibold uppercase tracking-[.14em] text-[#2f7658]">
-              Novas opções
-            </p>
-            <h2 className="mt-2 text-2xl font-semibold tracking-[-.02em]">
-              Pedir outro benefício
-            </h2>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-[#68746d]">
-              Estes benefícios são oferecidos por empresas parceiras e precisam de aprovação.
-            </p>
-          </div>
-
-          {available.length === 0 ? (
-            <div className="rounded-2xl border border-[#d5ddd8] bg-white p-6 text-sm text-[#68746d]">
-              Não há novos benefícios disponíveis no momento.
-            </div>
-          ) : (
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {available.map((benefit) => {
-                const request = requestStatus.get(benefit.id);
-                const pending = benefit.accessStatus === 'PENDING' || request?.status === 'PENDING';
-                const rejected = benefit.accessStatus === 'REJECTED' || request?.status === 'REJECTED';
-
+              {benefits.map((benefit) => {
+                const noUsesLeft = benefit.remainingUses <= 0;
                 return (
                   <article
-                    key={benefit.id}
-                    className="flex flex-col rounded-2xl border border-[#d8dfda] bg-[#eef1ed] p-5"
+                    key={benefit.benefitId}
+                    className="flex flex-col rounded-2xl border border-[#d5ddd8] bg-white p-5 shadow-[0_8px_30px_rgba(23,63,50,.05)]"
                   >
                     <div className="flex items-start justify-between gap-4">
-                      <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-white text-[#2f7658]">
-                        <Building2 className="h-5 w-5" />
+                      <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#e7efe9] text-[#2f7658]">
+                        <TicketCheck className="h-5 w-5" />
                       </span>
-                      {pending && (
-                        <span className="rounded-full bg-[#fff5df] px-3 py-1 text-xs font-semibold text-[#815a19]">
-                          Aguardando resposta
-                        </span>
-                      )}
-                      {rejected && (
-                        <span className="rounded-full bg-[#fff1ef] px-3 py-1 text-xs font-semibold text-[#9d3d35]">
-                          Não aprovado
-                        </span>
-                      )}
+                      <span className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                        noUsesLeft
+                          ? 'bg-[#f2f3f0] text-[#68746d]'
+                          : 'bg-[#edf8f1] text-[#2f7658]'
+                      }`}>
+                        {noUsesLeft
+                          ? 'Limite atingido'
+                          : `${benefit.remainingUses} de ${benefit.maxUsesPerUser} ${benefit.maxUsesPerUser === 1 ? 'uso' : 'usos'}`}
+                      </span>
                     </div>
-                    <h3 className="mt-5 text-lg font-semibold">{benefit.name}</h3>
-                    <p className="mt-2 text-sm text-[#68746d]">{benefit.providerName}</p>
-                    <p className="mt-3 line-clamp-2 text-sm leading-6 text-[#68746d]">
-                      {benefit.description}
+                    <h3 className="mt-5 text-lg font-semibold tracking-[-.015em]">{benefit.benefitName}</h3>
+                    <p className="mt-2 flex items-center gap-2 text-sm text-[#68746d]">
+                      <Store className="h-4 w-4 shrink-0" />
+                      {benefit.providerName}
                     </p>
-                    <button
-                      type="button"
-                      onClick={() => handleRequest(benefit)}
-                      disabled={pending || busyId === benefit.id}
-                      className="mt-5 flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-[#b9c8bf] bg-white px-4 text-sm font-semibold text-[#173f32] hover:border-[#2f7658] disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      {busyId === benefit.id && <Loader2 className="h-4 w-4 animate-spin" />}
-                      {pending
-                        ? 'Aguardando aprovação'
-                        : rejected
-                          ? 'Pedir novamente'
-                          : 'Pedir benefício'}
-                    </button>
+                    {benefit.description && (
+                      <p className="mt-3 line-clamp-2 text-sm leading-6 text-[#68746d]">
+                        {benefit.description}
+                      </p>
+                    )}
+                    {benefit.categories.length > 0 && (
+                      <div className="mt-3 flex flex-wrap gap-1.5">
+                        {benefit.categories.map((category) => (
+                          <span
+                            key={category.id}
+                            className="rounded-full border border-[#dce3de] px-2.5 py-0.5 text-xs text-[#536159]"
+                          >
+                            {category.name}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    {benefit.terms && (
+                      <details className="group mt-3">
+                        <summary className="flex cursor-pointer list-none items-center gap-1 text-xs font-semibold text-[#536159]">
+                          Termos de uso
+                          <ChevronDown className="h-3.5 w-3.5 transition-transform group-open:rotate-180" />
+                        </summary>
+                        <p className="mt-2 text-xs leading-5 text-[#68746d]">{benefit.terms}</p>
+                      </details>
+                    )}
+                    <div className="mt-5 border-t border-[#edf0ed] pt-4">
+                      <p className="mb-3 text-xs text-[#76827b]">
+                        {benefit.validUntil
+                          ? `Válido até ${formatDate(benefit.validUntil)}`
+                          : 'Sem data de expiração'}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => showQr(benefit)}
+                        disabled={busyId === benefit.benefitId || noUsesLeft}
+                        className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#173f32] px-4 text-sm font-semibold text-white hover:bg-[#102e25] disabled:opacity-60"
+                      >
+                        {busyId === benefit.benefitId
+                          ? <Loader2 className="h-5 w-5 animate-spin" />
+                          : <QrCode className="h-5 w-5" />}
+                        {busyId === benefit.benefitId
+                          ? 'Gerando QR Code...'
+                          : noUsesLeft
+                            ? 'Limite de uso atingido'
+                            : 'Mostrar QR Code'}
+                      </button>
+                    </div>
                   </article>
                 );
               })}
             </div>
           )}
         </section>
-
-        <details className="group mt-10 rounded-2xl border border-[#d5ddd8] bg-white">
-          <summary className="flex cursor-pointer list-none items-center justify-between gap-4 p-5 text-base font-semibold">
-            Acompanhar pedidos
-            <ChevronDown className="h-5 w-5 text-[#68746d] transition-transform group-open:rotate-180" />
-          </summary>
-          <div className="border-t border-[#edf0ed]">
-            {requests.length === 0 ? (
-              <p className="p-5 text-sm text-[#68746d]">Você ainda não fez nenhum pedido.</p>
-            ) : (
-              requests.map((request) => (
-                <div
-                  key={request.id}
-                  className="grid gap-2 border-b border-[#edf0ed] p-5 last:border-0 sm:grid-cols-[1fr_auto] sm:items-center"
-                >
-                  <div>
-                    <div className="text-sm font-semibold">{request.benefitName}</div>
-                    <div className="mt-1 text-xs text-[#76827b]">
-                      {request.providerName} · {formatDate(request.requestedAt)}
-                    </div>
-                  </div>
-                  <span className={`text-sm font-semibold ${
-                    request.status === 'APPROVED'
-                      ? 'text-[#2f7658]'
-                      : request.status === 'REJECTED'
-                        ? 'text-[#a13e35]'
-                        : request.status === 'CANCELLED'
-                          ? 'text-[#68746d]'
-                          : 'text-[#815a19]'
-                  }`}>
-                    {request.status === 'APPROVED'
-                      ? 'Aprovado'
-                      : request.status === 'REJECTED'
-                        ? 'Não aprovado'
-                        : request.status === 'CANCELLED'
-                          ? 'Cancelado — empresa desativada'
-                          : 'Aguardando resposta'}
-                  </span>
-                </div>
-              ))
-            )}
-          </div>
-        </details>
       </div>
 
       {qr && (
@@ -402,7 +302,7 @@ export function SharedBenefitsHub() {
                   {seconds > 0 ? 'Pronto para apresentar' : 'QR Code expirado'}
                 </div>
                 <h2 id="qr-title" className="mt-3 text-xl font-semibold text-[#18211d]">
-                  {qr.benefit.name}
+                  {qr.benefit.benefitName}
                 </h2>
                 <p className="mt-1 text-sm text-[#68746d]">{qr.benefit.providerName}</p>
               </div>

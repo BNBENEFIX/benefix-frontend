@@ -1,50 +1,21 @@
 import bnfixApi from './bnfixApi';
 import type {
+  EmployeeBenefitResponse,
   RedemptionPreview,
   RedemptionResult,
   RedemptionToken,
-  SharedBenefit,
-  SharedBenefitRequest,
 } from '../types';
 
 export const sharedBenefitService = {
-  available: async (): Promise<SharedBenefit[]> => {
-    const { data } = await bnfixApi.get<SharedBenefit[]>('/shared-benefits/available');
+  /** Lista os benefícios disponíveis para o funcionário logado (elegibilidade em tempo real). */
+  getMyBenefits: async (): Promise<EmployeeBenefitResponse[]> => {
+    const { data } = await bnfixApi.get<EmployeeBenefitResponse[]>('/benefits/me');
     return data;
   },
 
-  mine: async (): Promise<SharedBenefit[]> => {
-    const { data } = await bnfixApi.get<SharedBenefit[]>('/shared-benefits/me');
-    return data;
-  },
-
-  myRequests: async (): Promise<SharedBenefitRequest[]> => {
-    const { data } = await bnfixApi.get<SharedBenefitRequest[]>('/benefit-requests/me');
-    return data;
-  },
-
-  request: async (benefitId: number): Promise<SharedBenefitRequest> => {
-    const { data } = await bnfixApi.post<SharedBenefitRequest>('/benefit-requests', { benefitId });
-    return data;
-  },
-
-  providerRequests: async (): Promise<SharedBenefitRequest[]> => {
-    const { data } = await bnfixApi.get<SharedBenefitRequest[]>('/benefit-requests/provider');
-    return data;
-  },
-
-  approve: async (requestId: number): Promise<SharedBenefitRequest> => {
-    const { data } = await bnfixApi.put<SharedBenefitRequest>(`/benefit-requests/${requestId}/approve`);
-    return data;
-  },
-
-  reject: async (requestId: number, reason?: string): Promise<SharedBenefitRequest> => {
-    const { data } = await bnfixApi.put<SharedBenefitRequest>(`/benefit-requests/${requestId}/reject`, { reason });
-    return data;
-  },
-
-  issueToken: async (subscriptionId: number): Promise<RedemptionToken> => {
-    const { data } = await bnfixApi.post<RedemptionToken>(`/redemptions/subscriptions/${subscriptionId}/token`);
+  /** Emite um token de resgate para o benefício. Apenas 1 token ativo por (funcionário, benefício). */
+  issueToken: async (benefitId: number): Promise<RedemptionToken> => {
+    const { data } = await bnfixApi.post<RedemptionToken>(`/redemptions/benefits/${benefitId}/token`);
     return data;
   },
 

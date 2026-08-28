@@ -56,6 +56,8 @@ export interface BackendBenefit {
   active?: boolean;
   status?: boolean;
   publiclyVisible?: boolean;
+  /** Quando true, funcionários do próprio provider também podem resgatar. */
+  availableToProviderEmployees?: boolean;
   validUntil?: string;
   maxUsesPerUser?: number;
   terms?: string;
@@ -122,11 +124,21 @@ export interface BackendPartnership {
   createdAt?: string;
 }
 
-export interface BackendSubscription {
-  id: number;
+/**
+ * Benefício disponível para o funcionário logado — resposta de GET /benefits/me.
+ * A elegibilidade é derivada das parcerias ativas da empresa (avaliada em tempo real).
+ */
+export interface EmployeeBenefitResponse {
   benefitId: number;
-  employeeId: number;
-  createdAt?: string;
+  benefitName: string;
+  description: string;
+  providerName: string;
+  categories: Array<{ id: number; name: string }>;
+  validUntil?: string;
+  maxUsesPerUser: number;
+  usedCount: number;
+  remainingUses: number;
+  terms?: string;
 }
 
 // ── Tipos do frontend (mapeados a partir do backend) ─────────────────────────
@@ -174,6 +186,8 @@ export interface Benefit {
   backendId?: number;
   companyId?: number;
   active?: boolean;
+  /** Funcionários do próprio provider também podem resgatar. */
+  availableToProviderEmployees?: boolean;
   /** Alias usado em alguns pontos do código legado */
   providerName?: string;
 }
@@ -310,6 +324,8 @@ export interface CreateBenefitPayload {
   companyId: number;
   categoryIds?: number[];
   publiclyVisible?: boolean;
+  /** Quando true, funcionários do próprio provider também podem resgatar. Default: false. */
+  availableToProviderEmployees?: boolean;
   validUntil?: string;
   maxUsesPerUser?: number;
   terms?: string;
@@ -319,6 +335,8 @@ export interface UpdateBenefitPayload {
   name?: string;
   description?: string;
   publiclyVisible?: boolean;
+  /** Quando true, funcionários do próprio provider também podem resgatar. */
+  availableToProviderEmployees?: boolean;
   validUntil?: string;
   maxUsesPerUser?: number;
   terms?: string;
@@ -351,37 +369,6 @@ export interface OnboardingPayload {
 
 export interface CreatePartnershipPayload {
   benefitId: number;
-}
-
-export interface CreateSubscriptionPayload {
-  benefitId?: number;
-}
-
-export interface SharedBenefit {
-  id: number;
-  subscriptionId?: number;
-  name: string;
-  description: string;
-  providerName: string;
-  categories: Array<{ id: number; name: string }>;
-  validUntil?: string;
-  maxUsesPerUser: number;
-  terms?: string;
-  accessStatus: 'AVAILABLE_TO_REQUEST' | 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
-}
-
-export interface SharedBenefitRequest {
-  id: number;
-  benefitId: number;
-  benefitName: string;
-  providerName: string;
-  employeeId: number;
-  employeeName: string;
-  employeeCompanyName: string;
-  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
-  requestedAt: string;
-  reviewedAt?: string;
-  rejectionReason?: string;
 }
 
 export interface RedemptionToken {

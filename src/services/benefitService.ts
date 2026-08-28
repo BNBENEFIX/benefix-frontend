@@ -31,6 +31,7 @@ interface BackendTenantBenefit {
   validUntil?: string;
   maxUsesPerUser?: number;
   terms?: string;
+  availableToProviderEmployees?: boolean;
   createdAt?: string;
 }
 
@@ -71,6 +72,7 @@ const mapBenefit = (b: BackendBenefit): Benefit => ({
   active:       b.active ?? b.status,
   providerName: b.companyName ?? b.nameProvider ?? 'Fornecedor',
   rules:        b.terms,
+  availableToProviderEmployees: b.availableToProviderEmployees,
 });
 
 const mapTenantBenefit = (b: BackendTenantBenefit): Benefit => ({
@@ -93,6 +95,7 @@ const mapTenantBenefit = (b: BackendTenantBenefit): Benefit => ({
   active:       b.status,
   providerName: b.nameProvider ?? 'Tenant',
   rules:        b.terms,
+  availableToProviderEmployees: b.availableToProviderEmployees,
 });
 
 // ── Service ──────────────────────────────────────────────────────────────────

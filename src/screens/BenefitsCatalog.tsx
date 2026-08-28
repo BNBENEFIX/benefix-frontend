@@ -39,6 +39,7 @@ interface BenefitForm {
   validUntil: string;
   maxUsesPerUser: number;
   terms: string;
+  availableToProviderEmployees: boolean;
 }
 
 interface FormErrors {
@@ -71,6 +72,7 @@ const EMPTY_FORM: BenefitForm = {
   validUntil: '',
   maxUsesPerUser: 1,
   terms: '',
+  availableToProviderEmployees: false,
 };
 
 const categoriesList: Array<BenefitCategory | 'Todos'> = [
@@ -266,6 +268,7 @@ export const BenefitsCatalog: React.FC = () => {
         companyId,
         categoryIds: [form.categoryId],
         publiclyVisible: true,
+        availableToProviderEmployees: form.availableToProviderEmployees,
         validUntil: form.validUntil ? `${form.validUntil}T23:59:59` : undefined,
         maxUsesPerUser: form.maxUsesPerUser,
         terms: form.terms.trim() || undefined,
@@ -568,6 +571,11 @@ export const BenefitsCatalog: React.FC = () => {
                           ? benefit.active === false ? 'Pausado' : 'Disponível'
                           : benefit.category}
                       </span>
+                      {isOwnCard && benefit.availableToProviderEmployees && (
+                        <span className="rounded-full border border-[var(--brand)]/30 bg-[var(--brand-soft)] px-3 py-1 text-xs font-semibold text-[var(--brand)]">
+                          Funcionários
+                        </span>
+                      )}
                     </div>
 
                     {!isOwnCard && (
@@ -789,6 +797,31 @@ export const BenefitsCatalog: React.FC = () => {
                         disabled={formLoading}
                       />
                     </Field>
+                    <label
+                      htmlFor="benefit-provider-employees"
+                      className="flex cursor-pointer items-start gap-3 rounded-xl border border-[var(--line)] bg-[var(--surface)] p-4"
+                    >
+                      <input
+                        id="benefit-provider-employees"
+                        type="checkbox"
+                        checked={form.availableToProviderEmployees}
+                        onChange={(event) => setForm((current) => ({
+                          ...current,
+                          availableToProviderEmployees: event.target.checked,
+                        }))}
+                        className="mt-0.5 h-5 w-5 shrink-0 accent-[var(--brand)]"
+                        disabled={formLoading}
+                      />
+                      <span>
+                        <span className="block text-sm font-semibold text-[var(--ink)]">
+                          Liberar para funcionários da minha própria empresa
+                        </span>
+                        <span className="mt-1 block text-xs leading-5 text-[var(--muted)]">
+                          Quando marcado, os funcionários do seu estabelecimento também podem
+                          resgatar este benefício, além das empresas com parceria ativa.
+                        </span>
+                      </span>
+                    </label>
                   </>
                 )}
               </div>

@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import { sharedBenefitService } from '../services/sharedBenefitService';
 import { partnershipService } from '../services/partnershipService';
-import type { BackendPartnership, RedemptionPreview, SharedBenefitRequest } from '../types';
+import type { BackendPartnership, RedemptionPreview } from '../types';
 
 type RedemptionState =
   | 'idle'
@@ -54,11 +54,6 @@ const getApiMessage = (error: unknown, fallback: string) => {
 };
 
 export function ProviderBenefitsConsole() {
-  const [requests, setRequests] = useState<SharedBenefitRequest[]>([]);
-  const [requestsLoading, setRequestsLoading] = useState(true);
-  const [requestBusyId, setRequestBusyId] = useState<number | null>(null);
-  const [requestMessage, setRequestMessage] = useState<RequestMessage | null>(null);
-
   const [partnerships, setPartnerships] = useState<BackendPartnership[]>([]);
   const [partnershipsLoading, setPartnershipsLoading] = useState(true);
   const [partnershipBusyId, setPartnershipBusyId] = useState<number | null>(null);
@@ -80,17 +75,6 @@ export function ProviderBenefitsConsole() {
     decodeLockedRef.current = false;
   }, []);
 
-  const loadRequests = useCallback(async () => {
-    setRequestsLoading(true);
-    try {
-      setRequests(await sharedBenefitService.providerRequests());
-    } catch {
-      setRequests([]);
-    } finally {
-      setRequestsLoading(false);
-    }
-  }, []);
-
   const loadPartnerships = useCallback(async () => {
     setPartnershipsLoading(true);
     try {
@@ -103,9 +87,8 @@ export function ProviderBenefitsConsole() {
   }, []);
 
   useEffect(() => {
-    loadRequests();
     loadPartnerships();
-  }, [loadRequests, loadPartnerships]);
+  }, [loadPartnerships]);
 
   useEffect(() => () => stopCamera(), [stopCamera]);
 
@@ -116,37 +99,6 @@ export function ProviderBenefitsConsole() {
     setRedemptionMessage(null);
     setManualEntry(false);
     setRedemptionState('idle');
-  };
-
-  const actOnRequest = async (request: SharedBenefitRequest, approved: boolean) => {
-    setRequestBusyId(request.id);
-    setRequestMessage(null);
-    try {
-      if (approved) {
-        await sharedBenefitService.approve(request.id);
-      } else {
-        await sharedBenefitService.reject(
-          request.id,
-          'Solicitação recusada pelo estabelecimento',
-        );
-      }
-      setRequestMessage({
-        kind: 'success',
-        title: approved ? 'Solicitação aprovada' : 'Solicitação recusada',
-        detail: approved
-          ? `${request.employeeName} já pode usar ${request.benefitName}.`
-          : `A solicitação de ${request.employeeName} foi recusada.`,
-      });
-      await loadRequests();
-    } catch (error) {
-      setRequestMessage({
-        kind: 'error',
-        title: 'Não foi possível concluir',
-        detail: getApiMessage(error, 'Tente novamente em instantes.'),
-      });
-    } finally {
-      setRequestBusyId(null);
-    }
   };
 
   const actOnPartnership = async (partnership: BackendPartnership, accepted: boolean) => {
@@ -498,89 +450,6 @@ export function ProviderBenefitsConsole() {
               ))}
             </ol>
           </aside>
-        </div>
-      </div>
-
-      <div className="mt-8 rounded-2xl border border-[#d5ddd8] bg-white p-5 text-[#18211d] sm:p-6">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[.14em] text-[#2f7658]">
-              Acessos pendentes
-            </p>
-            <h2 className="mt-2 text-xl font-semibold">Solicitações recebidas</h2>
-            <p className="mt-1 text-sm text-[#68746d]">
-              Aprove para liberar um benefício ou recuse quando o pedido não se aplicar.
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={loadRequests}
-            className="flex h-10 shrink-0 items-center gap-2 rounded-lg border border-[#d5ddd8] px-3 text-xs font-semibold text-[#536159] hover:bg-[#f3f6f3]"
-          >
-            <RefreshCw className={`h-4 w-4 ${requestsLoading ? 'animate-spin' : ''}`} />
-            <span className="hidden sm:inline">Atualizar</span>
-          </button>
-        </div>
-
-        {requestMessage && (
-          <div
-            role={requestMessage.kind === 'error' ? 'alert' : 'status'}
-            className={`mt-5 rounded-lg border px-4 py-3 ${
-              requestMessage.kind === 'error'
-                ? 'border-[#efc2bc] bg-[#fff1ef] text-[#8f3730]'
-                : 'border-[#b9d7c6] bg-[#eef5f0] text-[#235c46]'
-            }`}
-          >
-            <div className="text-sm font-semibold">{requestMessage.title}</div>
-            <div className="mt-1 text-xs opacity-85">{requestMessage.detail}</div>
-          </div>
-        )}
-
-        <div className="mt-5 divide-y divide-[#edf0ed]">
-          {requestsLoading ? (
-            <div role="status" className="flex items-center gap-3 py-8 text-sm text-[#68746d]">
-              <Loader2 className="h-5 w-5 animate-spin text-[#2f7658]" />
-              Carregando solicitações...
-            </div>
-          ) : requests.length === 0 ? (
-            <div className="py-8">
-              <p className="text-sm font-semibold">Nenhuma solicitação pendente</p>
-              <p className="mt-1 text-sm text-[#68746d]">Novos pedidos aparecerão aqui.</p>
-            </div>
-          ) : (
-            requests.map((request) => (
-              <div
-                key={request.id}
-                className="grid gap-4 py-5 sm:grid-cols-[1fr_auto] sm:items-center"
-              >
-                <div>
-                  <div className="text-base font-semibold">{request.benefitName}</div>
-                  <div className="mt-1 text-sm text-[#68746d]">
-                    {request.employeeName} · {request.employeeCompanyName}
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    disabled={requestBusyId !== null}
-                    onClick={() => actOnRequest(request, false)}
-                    className="h-11 rounded-lg border border-[#dfb9b4] px-4 text-sm font-semibold text-[#9d3d35] disabled:opacity-50"
-                  >
-                    Recusar
-                  </button>
-                  <button
-                    type="button"
-                    disabled={requestBusyId !== null}
-                    onClick={() => actOnRequest(request, true)}
-                    className="flex h-11 items-center justify-center gap-2 rounded-lg bg-[#173f32] px-4 text-sm font-semibold text-white disabled:opacity-50"
-                  >
-                    {requestBusyId === request.id && <Loader2 className="h-4 w-4 animate-spin" />}
-                    Aprovar
-                  </button>
-                </div>
-              </div>
-            ))
-          )}
         </div>
       </div>
 

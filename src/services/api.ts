@@ -12,7 +12,6 @@
 import axios from 'axios';
 import bnfixApi, { USER_KEY, hasSession } from './bnfixApi';
 import { benefitService as realBenefitService } from './benefitService';
-import { sharedBenefitService } from './sharedBenefitService';
 import type {
   Benefit,
   Coupon,
@@ -21,7 +20,6 @@ import type {
   FeedbackRating,
   SurveyCampaign,
   SurveyResponse,
-  SharedBenefitRequest,
   User,
 } from '../types';
 
@@ -99,30 +97,6 @@ export const benefitService = {
       return realBenefitService.delete(Number(id));
     }
     await localApi.delete(`/benefits/${id}`);
-  },
-};
-
-// ── REQUESTS (solicitações de acesso a benefícios) ───────────────────────────
-// Usa a API real /benefit-requests. A empresa, o colaborador e o fornecedor
-// são derivados do JWT pelo backend — nenhuma identidade é enviada pelo navegador.
-
-export const requestService = {
-  getRequests: async (): Promise<SharedBenefitRequest[]> => {
-    return sharedBenefitService.myRequests();
-  },
-
-  createRequest: async (req: { benefitId: number }): Promise<SharedBenefitRequest> => {
-    return sharedBenefitService.request(Number(req.benefitId));
-  },
-
-  updateRequestStatus: async (
-    id: number,
-    status: 'Aprovado' | 'Rejeitado',
-    justification?: string,
-  ): Promise<SharedBenefitRequest> => {
-    return status === 'Aprovado'
-      ? sharedBenefitService.approve(id)
-      : sharedBenefitService.reject(id, justification);
   },
 };
 
@@ -257,7 +231,6 @@ export { employeeService } from './employeeService';
 export { companyService }  from './companyService';
 export { announcementService } from './announcementService';
 export { partnershipService } from './partnershipService';
-export { subscriptionService } from './subscriptionService';
 export { benefitService as realBenefitService } from './benefitService';
 
 export default bnfixApi;
