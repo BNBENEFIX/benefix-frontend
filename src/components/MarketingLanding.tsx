@@ -142,7 +142,7 @@ function BenefitPass({ reduceMotion }: { reduceMotion: boolean }) {
 
   return (
     <div
-      className="relative mx-auto h-[480px] w-full max-w-[560px] sm:h-[540px]"
+      className="relative mx-auto h-[380px] w-full max-w-[560px] sm:h-[480px] md:h-[540px]"
       role="img"
       aria-label="Fluxo visual de um benefício liberado, apresentado por QR Code e confirmado no atendimento"
     >
@@ -182,7 +182,7 @@ function BenefitPass({ reduceMotion }: { reduceMotion: boolean }) {
       </svg>
 
       <motion.div
-        className="absolute right-0 top-7 z-20 w-[178px] rounded-2xl border border-white/15 bg-[#174738] p-4 shadow-[0_18px_45px_rgba(0,0,0,.18)] sm:right-2 sm:w-[202px]"
+        className="absolute right-0 top-7 z-20 w-[150px] rounded-2xl border border-white/15 bg-[#174738] p-3 shadow-[0_18px_45px_rgba(0,0,0,.18)] sm:right-2 sm:w-[202px] sm:p-4"
         initial={reduceMotion ? false : { opacity: 0, x: 38, rotate: 4 }}
         animate={reduceMotion ? undefined : { opacity: 1, x: 0, rotate: 1.5 }}
         transition={{ duration: 0.85, delay: 0.8, ease: easeOut }}
@@ -200,7 +200,7 @@ function BenefitPass({ reduceMotion }: { reduceMotion: boolean }) {
       </motion.div>
 
       <motion.div
-        className="absolute left-0 top-[185px] z-30 w-[156px] rounded-2xl border border-[#d9e3dc] bg-[#F4F6F1] p-4 text-[#18211D] shadow-[0_20px_50px_rgba(1,20,12,.22)] sm:left-1 sm:w-[182px]"
+        className="absolute left-0 top-[145px] z-30 w-[136px] rounded-2xl border border-[#d9e3dc] bg-[#F4F6F1] p-3 text-[#18211D] shadow-[0_20px_50px_rgba(1,20,12,.22)] sm:left-1 sm:top-[185px] sm:w-[182px] sm:p-4"
         initial={reduceMotion ? false : { opacity: 0, x: -35, rotate: -5 }}
         animate={reduceMotion ? undefined : { opacity: 1, x: 0, rotate: -2 }}
         transition={{ duration: 0.85, delay: 1.05, ease: easeOut }}
@@ -217,7 +217,7 @@ function BenefitPass({ reduceMotion }: { reduceMotion: boolean }) {
       </motion.div>
 
       <motion.div
-        className="absolute inset-x-[48px] top-[98px] z-10 overflow-hidden rounded-[28px] border border-white/30 bg-white p-4 text-[#18211D] shadow-[0_38px_90px_rgba(0,0,0,.32)] sm:inset-x-[94px] sm:top-[94px] sm:p-5"
+        className="absolute inset-x-[48px] top-[70px] z-10 overflow-hidden rounded-[28px] border border-white/30 bg-white p-3 text-[#18211D] shadow-[0_38px_90px_rgba(0,0,0,.32)] sm:inset-x-[94px] sm:top-[94px] sm:p-5"
         initial={reduceMotion ? false : { opacity: 0, y: 55, rotateX: 12, scale: 0.94 }}
         animate={reduceMotion ? undefined : { opacity: 1, y: 0, rotateX: 0, scale: 1 }}
         transition={{ duration: 1, delay: 0.45, ease: easeOut }}
@@ -246,8 +246,8 @@ function BenefitPass({ reduceMotion }: { reduceMotion: boolean }) {
           <p className="mt-1.5 text-xs text-[#6d7972]">Empresa parceira</p>
         </div>
 
-        <div className="relative mx-auto mt-5 flex h-[146px] w-[146px] items-center justify-center overflow-hidden rounded-2xl border border-[#dce3de] bg-[#f9faf7] sm:h-[166px] sm:w-[166px]">
-          <QrCode className="h-[112px] w-[112px] text-[#11271f] sm:h-[132px] sm:w-[132px]" strokeWidth={1.35} />
+        <div className="relative mx-auto mt-4 flex h-[120px] w-[120px] items-center justify-center overflow-hidden rounded-2xl border border-[#dce3de] bg-[#f9faf7] sm:mt-5 sm:h-[146px] sm:w-[146px] md:h-[166px] md:w-[166px]">
+          <QrCode className="h-[90px] w-[90px] text-[#11271f] sm:h-[112px] sm:w-[112px] md:h-[132px] md:w-[132px]" strokeWidth={1.35} />
           <motion.div
             className="absolute inset-x-3 top-2 h-px bg-[#DC765E] shadow-[0_0_14px_3px_rgba(220,118,94,.48)]"
             animate={reduceMotion ? undefined : { y: [0, 126, 0] }}
@@ -265,7 +265,7 @@ function BenefitPass({ reduceMotion }: { reduceMotion: boolean }) {
       </motion.div>
 
       <motion.div
-        className="absolute bottom-5 right-1 z-30 w-[184px] rounded-2xl bg-[#F2C96D] p-4 text-[#17352b] shadow-[0_20px_48px_rgba(0,0,0,.22)] sm:bottom-8 sm:right-3 sm:w-[210px]"
+        className="absolute bottom-2 right-1 z-30 w-[160px] rounded-2xl bg-[#F2C96D] p-3 text-[#17352b] shadow-[0_20px_48px_rgba(0,0,0,.22)] sm:bottom-8 sm:right-3 sm:w-[210px] sm:p-4"
         initial={reduceMotion ? false : { opacity: 0, y: 35, rotate: 5 }}
         animate={reduceMotion ? undefined : { opacity: 1, y: 0, rotate: 2 }}
         transition={{ duration: 0.85, delay: 1.35, ease: easeOut }}
@@ -310,7 +310,7 @@ export function MarketingLanding() {
 
       <header className="absolute inset-x-0 top-0 z-40">
         <motion.div
-          className="mx-auto flex h-20 max-w-[1240px] items-center justify-between px-4 sm:h-24 sm:px-8"
+          className="mx-auto flex h-20 max-w-[1240px] items-center justify-between px-4 pt-[env(safe-area-inset-top,0px)] sm:h-24 sm:px-8"
           initial={reduceMotion ? false : { opacity: 0, y: -18 }}
           animate={reduceMotion ? undefined : { opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.15, ease: easeOut }}
@@ -409,7 +409,7 @@ export function MarketingLanding() {
 
       <section
         ref={heroRef}
-        className="relative min-h-[880px] bg-[#0B3024] pb-24 pt-32 text-white sm:pt-40 lg:flex lg:min-h-[820px] lg:items-center lg:pb-28 lg:pt-32"
+        className="relative min-h-[780px] bg-[#0B3024] pb-24 pt-[calc(2rem+env(safe-area-inset-top,0px))] text-white sm:min-h-[880px] sm:pt-40 lg:flex lg:min-h-[820px] lg:items-center lg:pb-28 lg:pt-32"
       >
         <div className="benefix-dot-field absolute inset-0 opacity-35" aria-hidden="true" />
         <div className="absolute inset-x-[8%] bottom-0 h-px bg-white/10" aria-hidden="true" />

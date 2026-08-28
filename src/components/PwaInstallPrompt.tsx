@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { Download, X } from 'lucide-react';
+import { Download, Share, X } from 'lucide-react';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
@@ -11,25 +11,46 @@ interface BeforeInstallPromptEvent extends Event {
 const DISMISS_KEY = 'bnfix_pwa_dismissed';
 const DISMISS_DURATION_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
+function isIos(): boolean {
+  if (typeof window === 'undefined') return false;
+  const ua = navigator.userAgent.toLowerCase();
+  return /iphone|ipad|ipod/.test(ua);
+}
+
+function isInStandaloneMode(): boolean {
+  if (typeof window === 'undefined') return false;
+  return (
+    window.matchMedia('(display-mode: standalone)').matches ||
+    (navigator as any).standalone === true
+  );
+}
+
+function wasDismissedRecently(): boolean {
+  const dismissed = localStorage.getItem(DISMISS_KEY);
+  return Boolean(dismissed && Date.now() - Number(dismissed) < DISMISS_DURATION_MS);
+}
+
 export function PwaInstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
-  const [visible, setVisible] = useState(false);
+  const [showAndroid, setShowAndroid] = useState(false);
+  const [showIos, setShowIos] = useState(false);
   const [installing, setInstalling] = useState(false);
 
   useEffect(() => {
-    // Don't show if already installed (standalone mode)
-    if (window.matchMedia('(display-mode: standalone)').matches) return;
-    if ((navigator as any).standalone === true) return;
+    if (isInStandaloneMode()) return;
+    if (wasDismissedRecently()) return;
 
-    // Don't show if recently dismissed
-    const dismissed = localStorage.getItem(DISMISS_KEY);
-    if (dismissed && Date.now() - Number(dismissed) < DISMISS_DURATION_MS) return;
+    // iOS: show custom guide since beforeinstallprompt doesn't exist
+    if (isIos()) {
+      setTimeout(() => setShowIos(true), 3000);
+      return;
+    }
 
+    // Android/Chrome: listen for the native install prompt
     const handler = (event: Event) => {
       event.preventDefault();
       setDeferredPrompt(event as BeforeInstallPromptEvent);
-      // Small delay so it doesn't flash on page load
-      setTimeout(() => setVisible(true), 3000);
+      setTimeout(() => setShowAndroid(true), 3000);
     };
 
     window.addEventListener('beforeinstallprompt', handler);
@@ -45,7 +66,7 @@ export function PwaInstallPrompt() {
       const { outcome } = await deferredPrompt.userChoice;
 
       if (outcome === 'accepted') {
-        setVisible(false);
+        setShowAndroid(false);
         setDeferredPrompt(null);
       }
     } catch {
@@ -56,12 +77,14 @@ export function PwaInstallPrompt() {
   }, [deferredPrompt]);
 
   const handleDismiss = useCallback(() => {
-    setVisible(false);
+    setShowAndroid(false);
+    setShowIos(false);
     setDeferredPrompt(null);
     localStorage.setItem(DISMISS_KEY, String(Date.now()));
   }, []);
 
-  if (!visible) return null;
+  // Nothing to show
+  if (!showAndroid && !showIos) return null;
 
   return (
     <div
@@ -92,23 +115,59 @@ export function PwaInstallPrompt() {
         </div>
       </div>
 
-      <div className="mt-4 flex gap-2">
-        <button
-          type="button"
-          onClick={handleDismiss}
-          className="flex-1 rounded-xl border border-[var(--line)] px-4 py-2.5 text-sm font-semibold text-[var(--muted)] hover:bg-[var(--surface-muted)]"
-        >
-          Agora não
-        </button>
-        <button
-          type="button"
-          onClick={handleInstall}
-          disabled={installing}
-          className="flex-[1.5] rounded-xl bg-[var(--action)] px-4 py-2.5 text-sm font-semibold text-[var(--action-ink)] hover:bg-[var(--action-hover)] disabled:opacity-60"
-        >
-          {installing ? 'Instalando...' : 'Instalar'}
-        </button>
-      </div>
+      {/* Android: native install button */}
+      {showAndroid && (
+        <div className="mt-4 flex gap-2">
+          <button
+            type="button"
+            onClick={handleDismiss}
+            className="flex-1 rounded-xl border border-[var(--line)] px-4 py-2.5 text-sm font-semibold text-[var(--muted)] hover:bg-[var(--surface-muted)]"
+          >
+            Agora não
+          </button>
+          <button
+            type="button"
+            onClick={handleInstall}
+            disabled={installing}
+            className="flex-[1.5] rounded-xl bg-[var(--action)] px-4 py-2.5 text-sm font-semibold text-[var(--action-ink)] hover:bg-[var(--action-hover)] disabled:opacity-60"
+          >
+            {installing ? 'Instalando...' : 'Instalar'}
+          </button>
+        </div>
+      )}
+
+      {/* iOS: step-by-step guide */}
+      {showIos && (
+        <div className="mt-4 space-y-3">
+          <div className="rounded-xl bg-[var(--surface-muted)] p-3">
+            <ol className="space-y-2.5 text-xs leading-5 text-[var(--ink)]">
+              <li className="flex items-start gap-2.5">
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[var(--brand)] text-[10px] font-bold text-white">1</span>
+                <span>
+                  Toque no ícone{' '}
+                  <Share className="inline-block h-3.5 w-3.5 text-[var(--brand)]" aria-label="Compartilhar" />{' '}
+                  <strong>Compartilhar</strong> na barra do Safari
+                </span>
+              </li>
+              <li className="flex items-start gap-2.5">
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[var(--brand)] text-[10px] font-bold text-white">2</span>
+                <span>Role para baixo e toque em <strong>"Adicionar à Tela de Início"</strong></span>
+              </li>
+              <li className="flex items-start gap-2.5">
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[var(--brand)] text-[10px] font-bold text-white">3</span>
+                <span>Confirme tocando em <strong>"Adicionar"</strong></span>
+              </li>
+            </ol>
+          </div>
+          <button
+            type="button"
+            onClick={handleDismiss}
+            className="w-full rounded-xl border border-[var(--line)] px-4 py-2.5 text-sm font-semibold text-[var(--muted)] hover:bg-[var(--surface-muted)]"
+          >
+            Entendi
+          </button>
+        </div>
+      )}
     </div>
   );
 }
