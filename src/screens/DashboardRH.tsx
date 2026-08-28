@@ -676,19 +676,6 @@ export const DashboardRH: React.FC = () => {
               </table>
             </div>
           </>
-        )}(emp) ? 'text-emerald-600' : 'text-red-500'}`}>
-                                {isEmployeeActive(emp) ? 'Acesso liberado' : 'Acesso bloqueado'}
-                              </span>
-                            </div>
-                          </div>
-                        </td>
-                      </tr>
-                    )}
-                  </React.Fragment>
-                ))}
-              </tbody>
-            </table>
-          </div>
         )}
 
         <p className="text-[10px] text-slate-400 pt-1">
