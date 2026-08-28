@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import '../index.css';
+import { ServiceWorkerRegistration } from '../components/ServiceWorkerRegistration';
+import { PwaInstallPrompt } from '../components/PwaInstallPrompt';
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'),
@@ -8,6 +10,15 @@ export const metadata: Metadata = {
     template: '%s | BNFix',
   },
   description: 'Gestão simples de colaboradores, benefícios e parcerias para empresas.',
+  manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'BNFix',
+  },
+  formatDetection: {
+    telephone: false,
+  },
   openGraph: {
     title: 'BNFix | Benefícios que fazem sentido',
     description: 'Gestão simples de colaboradores, benefícios e parcerias para empresas.',
@@ -25,19 +36,35 @@ export const metadata: Metadata = {
     icon: '/favicon.ico',
     apple: '/favicon.png',
   },
+  other: {
+    'mobile-web-app-capable': 'yes',
+  },
 };
 
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   viewportFit: 'cover',
-  themeColor: '#f5f2ea',
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#194b3a' },
+    { media: '(prefers-color-scheme: dark)', color: '#111713' },
+  ],
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="pt-BR" suppressHydrationWarning>
-      <body>{children}</body>
+      <head>
+        <link rel="apple-touch-icon" href="/favicon.png" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-title" content="BNFix" />
+      </head>
+      <body>
+        {children}
+        <PwaInstallPrompt />
+        <ServiceWorkerRegistration />
+      </body>
     </html>
   );
 }
