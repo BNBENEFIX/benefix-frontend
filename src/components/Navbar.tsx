@@ -195,7 +195,7 @@ export const Navbar: React.FC = () => {
 
   return (
     <>
-      <nav className="sticky top-0 z-50 border-b border-[var(--line)] bg-[var(--surface)] px-3 py-2.5 transition-colors sm:px-6 sm:py-3">
+      <nav className="sticky top-0 z-50 border-b border-[var(--line)] bg-[var(--surface)] px-3 pb-2.5 pt-[max(0.625rem,env(safe-area-inset-top))] transition-colors sm:px-6 sm:pb-3 sm:pt-[max(0.75rem,env(safe-area-inset-top))]">
         <div className="mx-auto flex max-w-[1180px] items-center justify-between gap-2 sm:gap-3">
           <div className="flex min-w-0 items-center gap-2 sm:gap-3">
             <div className="flex shrink-0 items-center gap-2 sm:gap-2.5">

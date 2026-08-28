@@ -79,18 +79,6 @@ body {
   overscroll-behavior-y: contain;
 }
 
-/* Safe area support for iOS standalone PWA (notch, home indicator) */
-@supports (padding-top: env(safe-area-inset-top)) {
-  @media all and (display-mode: standalone) {
-    body {
-      padding-top: env(safe-area-inset-top);
-      padding-left: env(safe-area-inset-left);
-      padding-right: env(safe-area-inset-right);
-      padding-bottom: env(safe-area-inset-bottom);
-    }
-  }
-}
-
 /* Remove tap highlight on mobile WebKit browsers */
 button,
 a,

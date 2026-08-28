@@ -278,7 +278,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
         <button
           type="button"
           onClick={toggleTheme}
-          className="fixed top-4 right-4 z-50 rounded-lg p-2.5 text-[var(--muted)] hover:bg-[var(--surface-muted)] hover:text-[var(--ink)] transition-colors"
+          className="fixed top-[max(1rem,env(safe-area-inset-top))] right-4 z-50 rounded-lg p-2.5 text-[var(--muted)] hover:bg-[var(--surface-muted)] hover:text-[var(--ink)] transition-colors"
           aria-label="Alternar tema"
         >
           {theme === 'light' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
