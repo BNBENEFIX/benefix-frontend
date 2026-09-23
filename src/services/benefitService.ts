@@ -19,6 +19,15 @@ import type {
   UpdateBenefitPayload,
 } from '../types';
 
+/** Resposta paginada do Spring Data (Page<T>). */
+interface Paginated<T> {
+  content: T[];
+}
+
+/** Normaliza resposta em array ou página para uma lista. */
+const toList = <T,>(data: T[] | Paginated<T>): T[] =>
+  Array.isArray(data) ? data : (data?.content ?? []);
+
 interface BackendTenantBenefit {
   id: number;
   benefitId?: number;
@@ -103,14 +112,18 @@ const mapTenantBenefit = (b: BackendTenantBenefit): Benefit => ({
 export const benefitService = {
   /** Catálogo global — todos os benefícios disponíveis no marketplace */
   getMarketplace: async (): Promise<Benefit[]> => {
-    const { data } = await bnfixApi.get<BackendBenefit[]>('/benefits/marketplace');
-    return Array.isArray(data) ? data.map(mapBenefit) : [];
+    const { data } = await bnfixApi.get<BackendBenefit[] | Paginated<BackendBenefit>>(
+      '/benefits/marketplace',
+    );
+    return toList(data).map(mapBenefit);
   },
 
   /** Benefícios do tenant do manager logado */
   getTenantBenefits: async (): Promise<Benefit[]> => {
-    const { data } = await bnfixApi.get<BackendTenantBenefit[]>('/benefits/tenant');
-    return Array.isArray(data) ? data.map(mapTenantBenefit) : [];
+    const { data } = await bnfixApi.get<BackendTenantBenefit[] | Paginated<BackendTenantBenefit>>(
+      '/benefits/tenant',
+    );
+    return toList(data).map(mapTenantBenefit);
   },
 
   /** Cria um novo benefício */
