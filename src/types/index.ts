@@ -367,6 +367,26 @@ export interface OnboardingPayload {
   manager: { name: string; cpf: string; email: string; password: string };
 }
 
+// ── Evento: cadastro do participante ─────────────────────────────────────────
+
+export type EmployeeStatus = 'ACTIVE' | 'DISABLED';
+
+/** Payload de POST /companies/event/enroll. CPF sempre sem máscara (11 dígitos). */
+export interface EnrollmentRequest {
+  name: string;
+  cpf: string;
+  email: string;
+  password: string;
+}
+
+export interface EnrollmentResponse {
+  employeeId: number;
+  name: string;
+  companyId: number;
+  companyName: string;
+  status: EmployeeStatus;
+}
+
 export interface CreatePartnershipPayload {
   benefitId: number;
 }
